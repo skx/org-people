@@ -90,7 +90,7 @@ the variable `org-people--cache' and record the mtime of the source file inside
                    (when (or (null tags)
                              (cl-intersection tags entry-tags :test #'string=))
                      ;; Only explicit property drawer values
-                     (dolist (prop (org-entry-properties nil 'standard))
+                     (dolist (prop (org-entry-properties nil 'properties))
                        (let ((key (intern (concat ":" (car prop))))
                              (val (cdr prop)))
                          (setq plist (plist-put plist key val))))
@@ -104,9 +104,7 @@ the variable `org-people--cache' and record the mtime of the source file inside
 
 (defun org-people-names ()
   "Return all known contact names found inside the file `org-people-file'."
-  (let* ((contacts (org-people))
-         (names (hash-table-keys contacts)))
-    names))
+  (sort (hash-table-keys (org-people)) #'string<))
 
 
 (defun org-people-select-by-name ()
@@ -116,7 +114,7 @@ All known contacts are presented, as determined by `org-people-names'."
 
 
 (defun org-people-get-by-name (name)
-  "Return plist for NAME from TABLE or the contents of the contact-file.
+  "Return plist for NAME from the contact-file.
 
 This is basically a way of finding \"all data\" about a given person."
   (gethash name (org-people)))
@@ -130,6 +128,8 @@ name, and then the attribute which should be inserted."
   (interactive)
   (let* ((person (org-people-select-by-name))
          (values (org-people-get-by-name person)))
+    (unless values
+      (user-error "No properties defined for %s" person))
     (let* ((keys (cl-loop for (k v) on values by #'cddr collect k))
            (choice (intern (completing-read
                             "Attribute: "
@@ -158,8 +158,9 @@ name, and then the attribute which should be inserted."
 
 (defun org-people-get-property (property &optional name)
   "Get PROPERTY for NAME."
-  (let ((name (or name (org-people-select-by-name))))
-    (plist-get (gethash name (org-people)) property)))
+  (when-let ((name (or name (org-people-select-by-name)))
+             (plist (gethash name (org-people))))
+    (plist-get plist property)))
 
 (defun org-people-get-address (&optional name)
   "Get the :ADDRESS property of the given contact"
@@ -212,7 +213,6 @@ name, and then the attribute which should be inserted."
 ;;
 ;;   Name, Phone, Email
 (defun org-people-by-tag (tag)
-  (interactive)
   (let ((people (org-people (list tag)))
         (result))
     (maphash
@@ -222,6 +222,7 @@ name, and then the attribute which should be inserted."
          (push (list name phone email) result)))
      people)
     (nreverse result)))
+
 
 
 
