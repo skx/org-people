@@ -62,11 +62,12 @@ the variable `org-people--cache' and record the mtime of the source file inside
   (unless (file-readable-p org-people-file)
     (error "org-people-file not readable: %s" org-people-file))
   (let ((file-mtime (nth 5 (file-attributes org-people-file))))
-    ;; Return cached if valid
+    ;; Return cached if valid, unless tags are in-play
     (when (and org-people--cache
-               (equal org-people--cache-mtime file-mtime))
+               (equal org-people--cache-mtime file-mtime)
+               (null tags))
       org-people--cache)
-    ;; Otherwise, rebuild
+    ;; Otherwise parse
     (let ((table (make-hash-table :test #'equal)))
       (with-current-buffer (find-file-noselect org-people-file)
         (org-with-wide-buffer
@@ -89,7 +90,7 @@ the variable `org-people--cache' and record the mtime of the source file inside
                    ;; Skip if tags are required and no match
                    (when (or (null tags)
                              (cl-intersection tags entry-tags :test #'string=))
-                     ;; Only explicit property drawer values
+                     ;; Get any associated properties
                      (dolist (prop (org-entry-properties nil 'standard))
                        (let ((key (intern (concat ":" (car prop))))
                              (val (cdr prop)))
