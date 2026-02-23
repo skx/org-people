@@ -90,7 +90,7 @@ the variable `org-people--cache' and record the mtime of the source file inside
                    (when (or (null tags)
                              (cl-intersection tags entry-tags :test #'string=))
                      ;; Only explicit property drawer values
-                     (dolist (prop (org-entry-properties nil 'properties))
+                     (dolist (prop (org-entry-properties nil 'standard))
                        (let ((key (intern (concat ":" (car prop))))
                              (val (cdr prop)))
                          (setq plist (plist-put plist key val))))
