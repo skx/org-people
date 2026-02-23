@@ -53,7 +53,7 @@ There are several utility functions within the package to work with contacts:
 * `org-people`
   * Parse all known contacts and return a hash of them.
   * The key is the person's name, the values is a plist of all known properties.
-* `org-peopl-names`
+* `org-people-names`
   * Return a list of all known people-names.
 * `org-people-select-by-name`
   * Programatically prompt the user for a contact name, with completion.
@@ -88,7 +88,7 @@ If you tag the entries within the people hierarchy you can then create org-mode 
 For example the following can auto-update:
 
 ```
-#+NAME: get-colleact-contacts
+#+NAME: get-colleagues-contacts
 #+BEGIN_SRC elisp :results value table
 (cons '("Name" "Phone" "Email") (org-people-by-tag "colleagues"))
 #+END_SRC
