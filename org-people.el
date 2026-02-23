@@ -3,11 +3,17 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
+;; Version History (brief)
+;;
+;; 0.2 - Added org-people-summary.
+;;       Updated all contacts to have :TAGS and :NAME properties where appropriate.
+;;
+;; 0.1 - initial release
 ;;
 
 (require 'org)
@@ -49,6 +55,15 @@ we only process level-two headings beneath the header named by `org-people-headl
 (defcustom org-people-summary-buffer-name
   "*Contacts*"
   "The name of the buffer to create/use with `org-people-summary'."
+  :type 'string
+  :group 'org-people)
+
+
+(defcustom org-people-summary-template
+  "{NAME} {PHONE} {EMAIL} {TAGS}"
+  "The format of the string to insert into the buffer when `org-people-summary' is invoked.
+
+Each entry will be formatted with this string by `org-people--format-plist' and terminated with a newline."
   :type 'string
   :group 'org-people)
 
@@ -104,6 +119,8 @@ the variable `org-people--cache' and record the mtime of the source file inside
                              (val (cdr prop)))
                          (setq plist (plist-put plist key val))))
                      (when plist
+                       (setq plist (plist-put plist :NAME name))
+                       (setq plist (plist-put plist :TAGS entry-tags))
                        (puthash name plist table))))))))))
       ;; Cache results
       (setq org-people--cache table)
@@ -179,6 +196,10 @@ name, and then the attribute which should be inserted."
   "Get the :EMAIL property of the given contact"
   (org-people-get-property :EMAIL name))
 
+(defun org-people-get-name (&optional name)
+  "Get the :NAME property of the given contact"
+  (org-people-get-property :NAME name))
+
 (defun org-people-get-phone (&optional name)
   "Get the :PHONE property of the given contact"
   (org-people-get-property :PHONE name))
@@ -204,16 +225,18 @@ name, and then the attribute which should be inserted."
   (insert (or (org-people-get-email) "")))
 
 
+(defun org-people-insert-name ()
+  "Insert the full name of a contact selected interactively by `org-people-select-by-name'."
+  (interactive)
+  (insert (or (org-people-get-name) "")))
+
+
 (defun org-people-insert-phone ()
   "Insert the :PHONE property of a contact selected interactively by `org-people-select-by-name'."
   (interactive)
   (insert (or (org-people-get-phone) "")))
 
 
-(defun org-people-insert-name ()
-  "Insert the full name of a contact selected interactively by `org-people-select-by-name'."
-  (interactive)
-  (insert (or (org-people-select-by-name) "")))
 
 
 
@@ -233,12 +256,34 @@ This is useful to create `org-mode' tables and allow them to be updated easily."
     (nreverse result)))
 
 
+(defun org-people--format-plist (plist template)
+  "Format TEMPLATE by replacing {KEY} with values from PLIST.
+
+Keys in TEMPLATE should be written without the leading colon,
+e.g. {EMAIL} matches :EMAIL.
+
+This is used by `org-people-summary'."
+  (replace-regexp-in-string
+   "{\\([^}]+\\)}"
+   (lambda (match)
+     (let* ((key (intern (concat ":" (match-string 1 match))))
+            (value (plist-get plist key)))
+       (if value
+           (format "%s" value)
+         "")))
+   template
+   t t))
+
+
 (defun org-people-summary ()
-  "Create a buffer containing a CSV summary of all known contacts.
+  "Create a buffer containing a summary of all known contacts.
 
-This is just a summary so we only include name, phone, and email addresses.
+By default we insert the name, phone, and email addresses, but this is
+specified by the default `org-people-summary-template'.  This is used
+as a format-string to control which properties to add.  (Properties
+which are not present in a given entry are ignored.)
 
-The buffer name is specified by `org-people-summary-buffer-name'."
+The buffer created is specified by `org-people-summary-buffer-name'."
   (interactive)
   ;; get, and kill, any existing buffer.
   (with-current-buffer (get-buffer-create org-people-summary-buffer-name)
@@ -249,14 +294,8 @@ The buffer name is specified by `org-people-summary-buffer-name'."
         (result))
     (maphash
      (lambda (name plist)
-       (let ((phone (or (plist-get plist :PHONE) ""))
-             (email (or (plist-get plist :EMAIL) "")))
-         (insert name)
-         (insert ", " )
-         (insert phone )
-         (insert ", " )
-         (insert email )
-         (insert "\n")))
+       (insert (org-people--format-plist plist org-people-summary-template))
+       (insert "\n"))
      people))
   (beginning-of-buffer))
 
