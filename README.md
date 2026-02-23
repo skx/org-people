@@ -20,9 +20,9 @@ Here is an example "contacts.org" file:
   :END
  ** Bob                           :colleague:
   :PROPERTIES
-  :ADDRESS: 32 Something Street
-  :EMAIL: alice@example.com
-  :PHONE: +123 456 789
+  :ADDRESS: 32 Something Lane
+  :EMAIL: bob@example.com
+  :PHONE: +123 456 987
   :END
 ```
 
