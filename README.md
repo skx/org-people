@@ -53,6 +53,8 @@ There are several utility functions within the package to work with contacts:
 * `org-people`
   * Parse all known contacts and return a hash of them.
   * The key is the person's name, the values is a plist of all known properties.
+* `org-people-summary`
+  * Parse all known contacts and pop to a buffer containing a CSV summary of them.
 * `org-people-names`
   * Return a list of all known people-names.
 * `org-people-select-by-name`
@@ -65,7 +67,14 @@ However the main meat of the package is `org-people-insert` which prompts you to
 Suggested usage:
 
 ```
+; insert a contact "thing" at the current point.
 (global-set-key (kbd "C-c p") 'org-people-insert)
+
+; show a summary of contacts.
+(global-set-key (kbd "C-c P") 'org-people-summary)
+
+; or show the whole file.
+(global-set-key (kbd "C-c P") '(lambda() (interactive) (find-file org-people-file)))
 ```
 
 
@@ -88,8 +97,20 @@ If you tag the entries within the people hierarchy you can then create org-mode 
 For example the following can auto-update:
 
 ```
+
+
+
+
 #+NAME: get-colleagues-contacts
+
+
+
+
 #+BEGIN_SRC elisp :results value table
 (cons '("Name" "Phone" "Email") (org-people-by-tag "colleagues"))
+
+
+
+
 #+END_SRC
 ```

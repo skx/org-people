@@ -46,6 +46,14 @@ we only process level-two headings beneath the header named by `org-people-headl
   :group 'org-people)
 
 
+(defcustom org-people-summary-buffer-name
+  "*Contacts*"
+  "The name of the buffer to create/use with `org-people-summary'."
+  :type 'string
+  :group 'org-people)
+
+
+
 
 ;; Core
 
@@ -210,10 +218,10 @@ name, and then the attribute which should be inserted."
 
 
 
-;; get contacts by tag, in a way that is useful for inserting into a table.
-;;
-;;   Name, Phone, Email
 (defun org-people-by-tag (tag)
+  "Retrun a simple list of contacts filtered by TAG.
+
+This is useful to create `org-mode' tables and allow them to be updated easily."
   (let ((people (org-people (list tag)))
         (result))
     (maphash
@@ -223,6 +231,35 @@ name, and then the attribute which should be inserted."
          (push (list name phone email) result)))
      people)
     (nreverse result)))
+
+
+(defun org-people-summary ()
+  "Create a buffer containing a CSV summary of all known contacts.
+
+This is just a summary so we only include name, phone, and email addresses.
+
+The buffer name is specified by `org-people-summary-buffer-name'."
+  (interactive)
+  ;; get, and kill, any existing buffer.
+  (with-current-buffer (get-buffer-create org-people-summary-buffer-name)
+    (kill-buffer))
+
+  (pop-to-buffer (get-buffer-create org-people-summary-buffer-name))
+  (let ((people (org-people))
+        (result))
+    (maphash
+     (lambda (name plist)
+       (let ((phone (or (plist-get plist :PHONE) ""))
+             (email (or (plist-get plist :EMAIL) "")))
+         (insert name)
+         (insert ", " )
+         (insert phone )
+         (insert ", " )
+         (insert email )
+         (insert "\n")))
+     people))
+  (beginning-of-buffer))
+
 
 
 
