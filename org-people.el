@@ -1,0 +1,220 @@
+;; org-people.el - A package for working with a contact-list in an org-mode file
+;;
+
+;; This code assumes there is a PEOPLE.org file which contains contacts, nested beneath
+;; a "* PEOPLE" heading.
+;;
+;; With this we can interactively insert data about a contact, via "C-c p", or specific
+;; fields.
+;;
+;; There is also a programmatic API which provides primitives for more behaviour.
+;;
+
+(require 'org)
+(require 'cl-lib)
+
+
+;; Configuration / Storage
+
+(defvar org-people--cache nil
+  "Cached result of parsing the contact list.
+This is used by `org-people' to avoid unnecessary parsing.")
+
+
+(defvar org-people--cache-mtime nil
+  "Modification time of the cached contacts file.
+This is used by `org-people' to avoid unnecessary parsing.")
+
+
+(defvar org-people-file
+  (expand-file-name "~/Private/Org/Reference/PEOPLE.org")
+  "The path to the org file containing contact details.
+While the format isn't defined specifically it is assumed properties are used for storing data, and
+we only process level-two headings beneath the header named by `org-people-headline'.")
+
+
+(defvar org-people-headline
+  "People"
+  "The name of the header beneath which contacts are parsed by `org-people'.")
+
+
+
+;; Core
+
+(defun org-people (&optional tags)
+  "Return hash table of NAME -> PLIST from the file specified in `org-people-file'.
+
+We only include data from level-2 headlines beneath the header named by `org-people-header'.
+
+If TAGS is non-nil (list of strings) then only entries with at least one matching tag are included.
+
+Because this is the core of our package and parsing could be slow we cache data inside
+the variable `org-people--cache' and record the mtime of the source file inside
+`org-people--cache-mtime' to rebuild the cache when the source file changes."
+  (let ((file-mtime (nth 5 (file-attributes org-people-file))))
+    ;; Return cached if valid
+    (when (and org-people--cache
+               (equal org-people--cache-mtime file-mtime))
+      org-people--cache)
+    ;; Otherwise, rebuild
+    (let ((table (make-hash-table :test #'equal)))
+      (with-current-buffer (find-file-noselect org-people-file)
+        (org-with-wide-buffer
+         (goto-char (point-min))
+         ;; Find the '* People' heading
+         (when (re-search-forward
+                (format org-complex-heading-regexp-format
+                        (regexp-quote org-people-headline))
+                nil t)
+           (let ((root-level (org-outline-level))
+                 (subtree-end (save-excursion (org-end-of-subtree t))))
+             (forward-line)
+             ;; Walk all level-2 children
+             (while (and (< (point) subtree-end)
+                         (re-search-forward org-heading-regexp subtree-end t))
+               (when (= (org-outline-level) (1+ root-level))
+                 (let ((name (nth 4 (org-heading-components)))
+                       (plist nil)
+                       (entry-tags (org-get-tags)))
+                   ;; Skip if tags are required and no match
+                   (when (or (null tags)
+                             (cl-intersection tags entry-tags :test #'string=))
+                     ;; Only explicit property drawer values
+                     (dolist (prop (org-entry-properties nil 'standard))
+                       (let ((key (intern (concat ":" (car prop))))
+                             (val (cdr prop)))
+                         (setq plist (plist-put plist key val))))
+                     (when plist
+                       (puthash name plist table))))))))))
+      ;; Cache results
+      (setq org-people--cache table)
+      (setq org-people--cache-mtime file-mtime)
+      table)))
+
+
+(defun org-people-names ()
+  "Return all known contact names found inside the file `org-people-file'."
+  (let* ((contacts (org-people))
+         (names (hash-table-keys contacts)))
+    names))
+
+
+(defun org-people-select-by-name ()
+  "Use `completing-read' to select a single contact name.
+All known contacts are presented, as determined by `org-people-names'."
+  (completing-read "Contact name: " (org-people-names) nil t))
+
+
+(defun org-people-get-by-name (name)
+  "Return plist for NAME from TABLE or the contents of the contact-file.
+
+This is basically a way of finding \"all data\" about a given person."
+  (gethash name (org-people)))
+
+
+(defun org-people-insert ()
+  "Insert a specific piece of data from a contact.
+
+This uses `org-people-select-by-name' to first prompt the user for contact
+name, and then the attribute which should be inserted."
+  (interactive)
+  (let* ((person (org-people-select-by-name))
+         (values (org-people-get-by-name person))
+         (keys   (remove-if-not #'symbolp values))
+         (symb   (completing-read "Attribute: " keys nil t)))
+  (insert (or (plist-get values (intern symb)) ""))))
+
+
+
+
+;;
+;; These are helpful functions, added over time, using the primitives above.
+;;
+;; These could have been written by users of our package.
+;;
+
+
+
+
+;;
+;; Return single fields from a given contact.
+;;
+;; If no contact is specified prompt for one.
+;;
+
+(defun org-people-get-address (&optional name)
+  "Get the :ADDRESS property of the given contact"
+  (let* ((name (or name (org-people-select-by-name))))
+    (plist-get (gethash name (org-people)) :ADDRESS)))
+
+
+(defun org-people-get-email (&optional name)
+  "Get the :EMAIL property of the given contact"
+  (let* ((name (or name (org-people-select-by-name))))
+    (plist-get (gethash name (org-people)) :EMAIL)))
+
+
+(defun org-people-get-phone (&optional name)
+  "Get the :PHONE property of the given contact"
+  (let* ((name (or name (org-people-select-by-name))))
+    (plist-get (gethash name (org-people)) :PHONE)))
+
+
+
+
+;;
+;; Insert single fields from a given contact.
+;;
+;; If no contact is specified prompt for one.
+;;
+
+(defun org-people-insert-address ()
+  "Insert the :ADDRESS property of a contact selected interactively by `org-people-select-by-name'."
+  (interactive)
+  (insert (or (org-people-get-address) "")))
+
+
+(defun org-people-insert-email ()
+  "Insert the :EMAIL property of a contact selected interactively by `org-people-select-by-name'."
+  (interactive)
+  (insert (or (org-people-get-email) "")))
+
+
+(defun org-people-insert-phone ()
+  "Insert the :PHONE property of a contact selected interactively by `org-people-select-by-name'."
+  (interactive)
+  (insert (or (org-people-get-phone) "")))
+
+
+(defun org-people-insert-name ()
+  "Insert the full name of a contact selected interactively by `org-people-select-by-name'."
+  (interactive)
+  (insert (or (org-people-select-by-name) "")))
+
+
+
+
+(global-set-key (kbd "C-c p") 'org-people-insert)
+
+
+
+;; get contacts by tag, in a way that is useful for inserting into a table.
+;;
+;;   Name, Phone, Email
+(defun org-people-by-tag (tag)
+  (interactive)
+  (let ((people (org-people (list tag)))
+      (result))
+    (maphash
+     (lambda (name plist)
+       (let ((phone (or (plist-get plist :PHONE) ""))
+             (email (or (plist-get plist :EMAIL) "")))
+           (push (list name phone email) result)))
+     people)
+    (nreverse result)))
+
+
+
+
+;; package time is over now.
+(provide 'org-people)
