@@ -1,13 +1,13 @@
+;;; -*- lexical-binding: t; -*-
+;;
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
-
-;; This code assumes there is a PEOPLE.org file which contains contacts, nested beneath
-;; a "* PEOPLE" heading.
+;; Author: Steve Kemp <steve@steve.fi>
+;; Version: 0.1
+;; Package-Requires: ((emacs "28.0") (org "9.0"))
+;; Keywords: outlines, contacts, people
+;; URL: https://github.com/skx/org-people
 ;;
-;; With this we can interactively insert data about a contact, via "C-c p", or specific
-;; fields.
-;;
-;; There is also a programmatic API which provides primitives for more behaviour.
 ;;
 
 (require 'org)
@@ -26,16 +26,24 @@ This is used by `org-people' to avoid unnecessary parsing.")
 This is used by `org-people' to avoid unnecessary parsing.")
 
 
-(defvar org-people-file
+(defgroup org-people nil
+  "Contact list helpers, using org-mode file as a backing store."
+  :group 'org)
+
+(defcustom org-people-file
   (expand-file-name "~/Org/PEOPLE.org")
   "The path to the org file containing contact details.
 While the format isn't defined specifically it is assumed properties are used for storing data, and
-we only process level-two headings beneath the header named by `org-people-headline'.")
+we only process level-two headings beneath the header named by `org-people-headline'."
+  :type 'file
+  :group 'org-people)
 
 
-(defvar org-people-headline
+(defcustom org-people-headline
   "People"
-  "The name of the header beneath which contacts are parsed by `org-people'.")
+  "The name of the header beneath which contacts are parsed by `org-people'."
+  :type 'string
+  :group 'org-people)
 
 
 
@@ -44,13 +52,15 @@ we only process level-two headings beneath the header named by `org-people-headl
 (defun org-people (&optional tags)
   "Return hash table of NAME -> PLIST from the file specified in `org-people-file'.
 
-We only include data from level-2 headlines beneath the header named by `org-people-header'.
+We only include data from level-2 headlines beneath the header named by `org-people-headline'.
 
 If TAGS is non-nil (list of strings) then only entries with at least one matching tag are included.
 
 Because this is the core of our package and parsing could be slow we cache data inside
 the variable `org-people--cache' and record the mtime of the source file inside
 `org-people--cache-mtime' to rebuild the cache when the source file changes."
+  (unless (file-readable-p org-people-file)
+    (error "org-people-file not readable: %s" org-people-file))
   (let ((file-mtime (nth 5 (file-attributes org-people-file))))
     ;; Return cached if valid
     (when (and org-people--cache
@@ -119,10 +129,14 @@ This uses `org-people-select-by-name' to first prompt the user for contact
 name, and then the attribute which should be inserted."
   (interactive)
   (let* ((person (org-people-select-by-name))
-         (values (org-people-get-by-name person))
-         (keys   (remove-if-not #'symbolp values))
-         (symb   (completing-read "Attribute: " keys nil t)))
-  (insert (or (plist-get values (intern symb)) ""))))
+         (values (org-people-get-by-name person)))
+    (let* ((keys (cl-loop for (k v) on values by #'cddr collect k))
+           (choice (intern (completing-read
+                            "Attribute: "
+                            (mapcar #'symbol-name keys)
+                            nil t))))
+      (insert (or (plist-get values choice) "")))))
+
 
 
 
@@ -142,22 +156,22 @@ name, and then the attribute which should be inserted."
 ;; If no contact is specified prompt for one.
 ;;
 
+(defun org-people-get-property (property &optional name)
+  "Get PROPERTY for NAME."
+  (let ((name (or name (org-people-select-by-name))))
+    (plist-get (gethash name (org-people)) property)))
+
 (defun org-people-get-address (&optional name)
   "Get the :ADDRESS property of the given contact"
-  (let* ((name (or name (org-people-select-by-name))))
-    (plist-get (gethash name (org-people)) :ADDRESS)))
-
+  (org-people-get-property :ADDRESS name))
 
 (defun org-people-get-email (&optional name)
   "Get the :EMAIL property of the given contact"
-  (let* ((name (or name (org-people-select-by-name))))
-    (plist-get (gethash name (org-people)) :EMAIL)))
-
+  (org-people-get-property :EMAIL name))
 
 (defun org-people-get-phone (&optional name)
   "Get the :PHONE property of the given contact"
-  (let* ((name (or name (org-people-select-by-name))))
-    (plist-get (gethash name (org-people)) :PHONE)))
+  (org-people-get-property :PHONE name))
 
 
 
@@ -200,12 +214,12 @@ name, and then the attribute which should be inserted."
 (defun org-people-by-tag (tag)
   (interactive)
   (let ((people (org-people (list tag)))
-      (result))
+        (result))
     (maphash
      (lambda (name plist)
        (let ((phone (or (plist-get plist :PHONE) ""))
              (email (or (plist-get plist :EMAIL) "")))
-           (push (list name phone email) result)))
+         (push (list name phone email) result)))
      people)
     (nreverse result)))
 
