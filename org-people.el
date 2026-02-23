@@ -60,7 +60,7 @@ we only process level-two headings beneath the header named by `org-people-headl
 
 
 (defcustom org-people-summary-template
-  "{NAME} {PHONE} {EMAIL} {TAGS}"
+  "{NAME} {PHONE} {EMAIL}"
   "The format of the string to insert into the buffer when `org-people-summary' is invoked.
 
 Each entry will be formatted with this string by `org-people--format-plist' and terminated with a newline."
