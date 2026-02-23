@@ -27,7 +27,7 @@ This is used by `org-people' to avoid unnecessary parsing.")
 
 
 (defvar org-people-file
-  (expand-file-name "~/Private/Org/Reference/PEOPLE.org")
+  (expand-file-name "~/Org/PEOPLE.org")
   "The path to the org file containing contact details.
 While the format isn't defined specifically it is assumed properties are used for storing data, and
 we only process level-two headings beneath the header named by `org-people-headline'.")
@@ -191,10 +191,6 @@ name, and then the attribute which should be inserted."
   (interactive)
   (insert (or (org-people-select-by-name) "")))
 
-
-
-
-(global-set-key (kbd "C-c p") 'org-people-insert)
 
 
 
