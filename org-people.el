@@ -257,23 +257,52 @@ This is useful to create `org-mode' tables and allow them to be updated easily."
 
 
 (defun org-people--format-plist (plist template)
-  "Format TEMPLATE by replacing {KEY} with values from PLIST.
+  "Format TEMPLATE replacing:
 
-Keys in TEMPLATE should be written without the leading colon,
-e.g. {EMAIL} matches :EMAIL.
+  {KEY}
+  {KEY|fallback}
+  {KEY:WIDTH}
+  {KEY:WIDTH|fallback}
 
-This is used by `org-people-summary'."
+WIDTH works like `format':
+  positive  -> right aligned
+  negative  -> left aligned
+
+Values longer than WIDTH are truncated.
+
+When a key is not found it is replaced with the fallback.
+
+This function is used by `org-people-summary'."
   (replace-regexp-in-string
-   "{\\([^}]+\\)}"
+   "{\\([^}|:]+\\)\\(?::\\([-0-9]+\\)\\)?\\(?:|\\([^}]*\\)\\)?}"
    (lambda (match)
-     (let* ((key (intern (concat ":" (match-string 1 match))))
-            (value (plist-get plist key)))
-       (if value
-           (format "%s" value)
-         "")))
-   template
-   t t))
+     ;; Re-match against the match itself to extract groups
+     (string-match
+      "{\\([^}|:]+\\)\\(?::\\([-0-9]+\\)\\)?\\(?:|\\([^}]*\\)\\)?}"
+      match)
+     (let* ((key-str (match-string 1 match))
+            (width-str (match-string 2 match))
+            (fallback (match-string 3 match))
+            (key (intern (concat ":" key-str)))
+            (val (plist-get plist key)))
 
+       ;; Apply fallback if missing or empty
+       (setq val (if (and val (not (equal val "")))
+                     val
+                   (or fallback "")))
+
+       ;; Apply width and truncation
+       (if width-str
+           (let* ((width (string-to-number width-str))
+                  (abs-width (abs width))
+                  ;; truncate if needed
+                  (val (if (> (length val) abs-width)
+                           (substring val 0 abs-width)
+                         val)))
+             ;; pad using format
+             (format (format "%%%ds" width) val))
+         val)))
+   template t t))
 
 (defun org-people-summary ()
   "Create a buffer containing a summary of all known contacts.
