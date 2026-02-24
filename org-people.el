@@ -94,7 +94,7 @@ Because this is the core of our package and parsing could be slow we cache data 
 the variable `org-people--cache' and record the mtime of the source file inside
 `org-people--cache-mtime' to rebuild the cache when the source file changes."
   (unless (file-readable-p org-people-file)
-    (error "org-people-file not readable: %s" org-people-file))
+    (user-error "org-people-file not readable: %s" org-people-file))
   (let ((file-mtime (nth 5 (file-attributes org-people-file))))
     ;; Return cached if valid, unless tags are in-play
     (when (and org-people--cache
@@ -356,8 +356,8 @@ and `view-mode' is enabled once complete to allow 'q' to bury the
 results."
   (interactive)
   ;; get, and kill, any pre-existing buffer with this name.
-  (with-current-buffer (get-buffer-create org-people-summary-buffer-name)
-    (kill-buffer))
+  (when-let ((buf (get-buffer org-people-summary-buffer-name)))
+    (kill-buffer buf))
 
   ;; create replacement buffer.
   (pop-to-buffer (get-buffer-create org-people-summary-buffer-name))
@@ -367,7 +367,7 @@ results."
        (insert (org-people--format-plist plist org-people-summary-template))
        (insert "\n"))
      people))
-  (beginning-of-buffer)
+  (goto-char (point-min))
   (view-mode))
 
 
