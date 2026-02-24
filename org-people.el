@@ -60,7 +60,7 @@ we only process level-two headings beneath the header named by `org-people-headl
 
 
 (defcustom org-people-summary-template
-  "{NAME} {PHONE} {EMAIL}"
+  "{NAME} {PHONE} {EMAIL} {TAGS}"
   "The format of the string to insert into the buffer when `org-people-summary' is invoked.
 
 Each entry will be formatted with this string by `org-people--format-plist' and terminated with a newline."
@@ -120,7 +120,8 @@ the variable `org-people--cache' and record the mtime of the source file inside
                          (setq plist (plist-put plist key val))))
                      (when plist
                        (setq plist (plist-put plist :NAME name))
-                       (setq plist (plist-put plist :TAGS entry-tags))
+                       ; tags are converted from a list to a comma-separated string.
+                       (setq plist (plist-put plist :TAGS (mapconcat 'identity entry-tags ",")))
                        (puthash name plist table))))))))))
       ;; Cache results
       (setq org-people--cache table)
