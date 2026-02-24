@@ -3,12 +3,15 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.3 - :TAGS shows up as a comma-separated list in org-people-summary.
+;;       org-people-summary is set to view-mode, so "q" buries the buffer.
 ;;
 ;; 0.2 - Added org-people-summary.
 ;;       Updated all contacts to have :TAGS and :NAME properties where appropriate.
@@ -16,11 +19,14 @@
 ;; 0.1 - initial release
 ;;
 
+
 (require 'org)
 (require 'cl-lib)
 
 
+;;
 ;; Configuration / Storage
+;;
 
 (defvar org-people--cache nil
   "Cached result of parsing the contact list.
@@ -35,6 +41,7 @@ This is used by `org-people' to avoid unnecessary parsing.")
 (defgroup org-people nil
   "Contact list helpers, using org-mode file as a backing store."
   :group 'org)
+
 
 (defcustom org-people-file
   (expand-file-name "~/Org/PEOPLE.org")
@@ -69,8 +76,9 @@ Each entry will be formatted with this string by `org-people--format-plist' and 
 
 
 
-
+;;
 ;; Core
+;;
 
 (defun org-people (&optional tags)
   "Return hash table of NAME -> PLIST from the file specified in `org-people-file'.
@@ -151,7 +159,8 @@ This is basically a way of finding \"all data\" about a given person."
   "Insert a specific piece of data from a contact.
 
 This uses `org-people-select-by-name' to first prompt the user for contact
-name, and then the attribute which should be inserted."
+name, and then a second interactive selection of the specific attribute
+which should be inserted."
   (interactive)
   (let* ((person (org-people-select-by-name))
          (values (org-people-get-by-name person)))
@@ -183,7 +192,7 @@ name, and then the attribute which should be inserted."
 ;; If no contact is specified prompt for one.
 ;;
 
-(defun org-people-get-property (property &optional name)
+(defun org-people--get-property (property &optional name)
   "Get PROPERTY for NAME."
   (when-let ((name (or name (org-people-select-by-name)))
              (plist (gethash name (org-people))))
@@ -191,19 +200,19 @@ name, and then the attribute which should be inserted."
 
 (defun org-people-get-address (&optional name)
   "Get the :ADDRESS property of the given contact"
-  (org-people-get-property :ADDRESS name))
+  (org-people--get-property :ADDRESS name))
 
 (defun org-people-get-email (&optional name)
   "Get the :EMAIL property of the given contact"
-  (org-people-get-property :EMAIL name))
+  (org-people--get-property :EMAIL name))
 
 (defun org-people-get-name (&optional name)
   "Get the :NAME property of the given contact"
-  (org-people-get-property :NAME name))
+  (org-people--get-property :NAME name))
 
 (defun org-people-get-phone (&optional name)
   "Get the :PHONE property of the given contact"
-  (org-people-get-property :PHONE name))
+  (org-people--get-property :PHONE name))
 
 
 
@@ -240,10 +249,12 @@ name, and then the attribute which should be inserted."
 
 
 
-
+;;
+;; Misc
+;;
 
 (defun org-people-by-tag (tag)
-  "Retrun a simple list of contacts filtered by TAG.
+  "Return a simple list of contacts filtered by TAG.
 
 This is useful to create `org-mode' tables and allow them to be updated easily."
   (let ((people (org-people (list tag)))
@@ -271,7 +282,7 @@ WIDTH works like `format':
 
 Values longer than WIDTH are truncated.
 
-When a key is not found it is replaced with the fallback.
+When a key is not found it is replaced with the fallback if present, otherwise nothing.
 
 This function is used by `org-people-summary'."
   (replace-regexp-in-string
@@ -305,29 +316,32 @@ This function is used by `org-people-summary'."
          val)))
    template t t))
 
+
 (defun org-people-summary ()
-  "Create a buffer containing a summary of all known contacts.
+  "Create a popup buffer containing a summary of all known contacts.
 
-By default we insert the name, phone, and email addresses, but this is
-specified by the default `org-people-summary-template'.  This is used
-as a format-string to control which properties to add.  (Properties
-which are not present in a given entry are ignored.)
+By default we insert the name, phone, and email addresses, but the
+specified fields to be inserted are specified by the format string
+which is stored in `org-people-summary-template'.
 
-The buffer created is specified by `org-people-summary-buffer-name'."
+The buffer created is specified by `org-people-summary-buffer-name',
+and `view-mode' is enabled once complete to allow 'q' to bury the
+results."
   (interactive)
-  ;; get, and kill, any existing buffer.
+  ;; get, and kill, any pre-existing buffer with this name.
   (with-current-buffer (get-buffer-create org-people-summary-buffer-name)
     (kill-buffer))
 
+  ;; create replacement buffer.
   (pop-to-buffer (get-buffer-create org-people-summary-buffer-name))
-  (let ((people (org-people))
-        (result))
+  (let ((people (org-people)))
     (maphash
      (lambda (name plist)
        (insert (org-people--format-plist plist org-people-summary-template))
        (insert "\n"))
      people))
-  (beginning-of-buffer))
+  (beginning-of-buffer)
+  (view-mode))
 
 
 
