@@ -3,12 +3,15 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.3
+;; Version: 0.4
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.4 - Allow searching by property value.
+;;       Added org-people-get-by-email, etc, using this new facility.
 ;;
 ;; 0.3 - :TAGS shows up as a comma-separated list in org-people-summary.
 ;;       org-people-summary is set to view-mode, so "q" buries the buffer.
@@ -153,6 +156,30 @@ All known contacts are presented, as determined by `org-people-names'."
 
 This is basically a way of finding \"all data\" about a given person."
   (gethash name (org-people)))
+
+
+(defun org-people-get-by-property (property value)
+  "Return a contact by searching the contents of a specific property.
+
+For example :EMAIL equal to bob@example.com."
+  (let ((people (org-people))
+        (result))
+    (maphash
+     (lambda (name plist)
+       (let ((found (plist-get plist property)))
+         (if (string-equal value (or found ""))
+             (setq result plist))))
+     people)
+    result))
+
+(defun org-people-get-by-email (email)
+  "Return plist for EMAIL from the contact-file."
+  (org-people-get-by-property :EMAIL email))
+
+
+(defun org-people-get-by-phone (number)
+  "Return plist for NUMBER from the contact-file."
+  (org-people-get-by-property :PHONE number))
 
 
 (defun org-people-insert ()
