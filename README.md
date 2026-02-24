@@ -48,21 +48,12 @@ If you use `org-capture` you may use the following template to add a new entry:
 
 ## Working With People
 
-There are several utility functions within the package to work with contacts:
+These are the main user-focused functions within the package to work with contacts:
 
-* `org-people`
-  * Parse all known contacts and return a hash of them.
-  * The key is the person's name, the values is a plist of all known properties.
+* `org-people-insert`
+  * Insert contact-data into the buffer.
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a CSV summary of them.
-* `org-people-names`
-  * Return a list of all known people-names.
-* `org-people-select-by-name`
-  * Programatically prompt the user for a contact name, with completion.
-* `org-people-get-by-name`
-  * Get all data, i.e. the plist, associated with a given contact name.
-
-However the main meat of the package is `org-people-insert` which prompts you to enter a contact name, with completion, and then the attribute which you wish to insert.  This allows you to quickly and easily insert the email, phone, or similar for a given contact-person.
 
 Suggested usage:
 
@@ -76,6 +67,18 @@ Suggested usage:
 ; or show the whole file.
 (global-set-key (kbd "C-c P") '(lambda() (interactive) (find-file org-people-file)))
 ```
+
+There are functions for working with the parsed contacts, such as:
+
+* `org-people-parse`
+  * Parse all known contacts and return a hash of them.
+  * The key is the person's name, the values is a plist of all known properties.
+* `org-people-select-interactively`
+  * Prompt the user for a contact name, and return the known data about that contact.
+* `org-people-get-by-name`
+  * Get data about a contact, by name.
+* `org-people-filter`
+  * Find matching contacts via arbitrary filter/predicate.
 
 
 
@@ -97,20 +100,9 @@ If you tag the entries within the people hierarchy you can then create org-mode 
 For example the following can auto-update:
 
 ```
-
-
-
-
-#+NAME: get-colleagues-contacts
-
-
-
-
-#+BEGIN_SRC elisp :results value table
-(cons '("Name" "Phone" "Email") (org-people-by-tag "colleagues"))
-
-
-
-
-#+END_SRC
+'#+NAME: get-colleagues-contacts
+'#+BEGIN_SRC elisp :results value table
+(cons '("Name" "Phone" "Email")
+       (org-people-by-tag "colleagues"))
+'#+END_SRC
 ```

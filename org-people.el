@@ -3,12 +3,15 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.4
+;; Version: 0.5
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.5 - Drop simple functions.  They can be user-driver.
+;;       Added filtering options and rewrote code to use them.
 ;;
 ;; 0.4 - Allow searching by property value.
 ;;       Added org-people-get-by-email, etc, using this new facility.
@@ -83,7 +86,7 @@ Each entry will be formatted with this string by `org-people--format-plist' and 
 ;; Core
 ;;
 
-(defun org-people (&optional tags)
+(defun org-people-parse ()
   "Return hash table of NAME -> PLIST from the file specified in `org-people-file'.
 
 We only include data from level-2 headlines beneath the header named by `org-people-headline'.
@@ -96,12 +99,10 @@ the variable `org-people--cache' and record the mtime of the source file inside
   (unless (file-readable-p org-people-file)
     (user-error "org-people-file not readable: %s" org-people-file))
   (let ((file-mtime (nth 5 (file-attributes org-people-file))))
-    ;; Return cached if valid, unless tags are in-play
     (when (and org-people--cache
-               (equal org-people--cache-mtime file-mtime)
-               (null tags))
+               (equal org-people--cache-mtime file-mtime))
       org-people--cache)
-    ;; Otherwise parse
+    ;; Otherwise parse afresh
     (let ((table (make-hash-table :test #'equal)))
       (with-current-buffer (find-file-noselect org-people-file)
         (org-with-wide-buffer
@@ -121,32 +122,40 @@ the variable `org-people--cache' and record the mtime of the source file inside
                  (let ((name (nth 4 (org-heading-components)))
                        (plist nil)
                        (entry-tags (org-get-tags)))
-                   ;; Skip if tags are required and no match
-                   (when (or (null tags)
-                             (cl-intersection tags entry-tags :test #'string=))
-                     ;; Get any associated properties
-                     (dolist (prop (org-entry-properties nil 'standard))
-                       (let ((key (intern (concat ":" (car prop))))
-                             (val (cdr prop)))
-                         (setq plist (plist-put plist key val))))
-                     (when plist
-                       (setq plist (plist-put plist :NAME name))
-                       ; tags are converted from a list to a comma-separated string.
-                       (setq plist (plist-put plist :TAGS (mapconcat 'identity entry-tags ",")))
-                       (puthash name plist table))))))))))
+                   ;; Get any associated properties
+                   (dolist (prop (org-entry-properties nil 'standard))
+                     (let ((key (intern (concat ":" (car prop))))
+                           (val (cdr prop)))
+                       (setq plist (plist-put plist key val))))
+                   (when plist
+                     (setq plist (plist-put plist :NAME name))
+                     (setq plist (plist-put plist :TAGS entry-tags))
+                     (puthash name plist table)))))))))
       ;; Cache results
       (setq org-people--cache table)
       (setq org-people--cache-mtime file-mtime)
       table)))
 
 
+
+
+
+;;
+;; Filtering and searching functions that build upon the data-structure
+;; which org-people-parse returns.
+;;
+
 (defun org-people-names ()
-  "Return all known contact names found inside the file `org-people-file'."
-  (sort (hash-table-keys (org-people)) #'string<))
+  "Return all known contact names found inside the file `org-people-file'.
+
+This uses `org-people-parse' to get the list of known contacts, with a cache
+to avoid re-parsing unnecessarily."
+  (sort (hash-table-keys (org-people-parse)) #'string<))
 
 
-(defun org-people-select-by-name ()
+(defun org-people-select-interactively ()
   "Use `completing-read' to select a single contact name.
+
 All known contacts are presented, as determined by `org-people-names'."
   (completing-read "Contact name: " (org-people-names) nil t))
 
@@ -154,42 +163,74 @@ All known contacts are presented, as determined by `org-people-names'."
 (defun org-people-get-by-name (name)
   "Return plist for NAME from the contact-file.
 
-This is basically a way of finding \"all data\" about a given person."
-  (gethash name (org-people)))
+This is basically the way of getting all data known about a given person."
+  (gethash name (org-people-parse)))
 
 
-(defun org-people-get-by-property (property value)
-  "Return a contact by searching the contents of a specific property.
+(defun org-people-filter (pred-p)
+  "Filter all known contacts by the given predicate.
 
-For example :EMAIL equal to bob@example.com."
-  (let ((people (org-people))
-        (result))
+PRED-P should be a function which accepts the plist of properties associated
+with a given contact, and returns `t' if they should be kept.
+
+See `org-people-get-by-property' for an example use of this function."
+  (let ((people (org-people-parse))
+        (result (make-hash-table :test #'equal)))
     (maphash
      (lambda (name plist)
-       (let ((found (plist-get plist property)))
-         (if (string-equal value (or found ""))
-             (setq result plist))))
+       (if (funcall pred-p plist)
+           (puthash name plist result)))
      people)
     result))
 
-(defun org-people-get-by-email (email)
-  "Return plist for EMAIL from the contact-file."
-  (org-people-get-by-property :EMAIL email))
+
+(defun org-people-get-by-property (property value)
+  "Return contacts by searching the contents of a specific property.
+
+For example :EMAIL equal to bob@example.com."
+  (org-people-filter (lambda(plist)
+                       (let ((found (plist-get plist property)))
+                         (if (string-equal value (or found ""))
+                             t)))))
 
 
-(defun org-people-get-by-phone (number)
-  "Return plist for NUMBER from the contact-file."
-  (org-people-get-by-property :PHONE number))
+(defun org-people-get-by-property-regexp (property regexp)
+  "Return a contact by searching the contents of a specific property.
+
+For example :EMAIL matches '@example.com$'"
+  (org-people-filter (lambda(plist)
+                       (let ((found (plist-get plist property)))
+                         (if (string-match regexp (or found ""))
+                             t)))))
+
+
+
+(defun org-people-by-tag (tag)
+  "Return a simple list of contacts filtered by TAG.
+
+This is useful to create `org-mode' tables and allow them to be updated easily."
+  (let ((people (org-people-parse))
+        (result))
+    (maphash
+     (lambda (name plist)
+       (let ((phone (or (plist-get plist :PHONE) ""))
+             (email (or (plist-get plist :EMAIL) ""))
+             (tags (or (plist-get plist :TAGS) '())))
+         (if (member tag tags)
+                 (push (list name phone email) result))))
+     people)
+    (nreverse result)))
+
 
 
 (defun org-people-insert ()
   "Insert a specific piece of data from a contact.
 
-This uses `org-people-select-by-name' to first prompt the user for contact
+This uses `org-people-select-interactively' to first prompt the user for contact
 name, and then a second interactive selection of the specific attribute
 which should be inserted."
   (interactive)
-  (let* ((person (org-people-select-by-name))
+  (let* ((person (org-people-select-interactively))
          (values (org-people-get-by-name person)))
     (unless values
       (user-error "No properties defined for %s" person))
@@ -209,90 +250,6 @@ which should be inserted."
 ;;
 ;; These could have been written by users of our package.
 ;;
-
-
-
-
-;;
-;; Return single fields from a given contact.
-;;
-;; If no contact is specified prompt for one.
-;;
-
-(defun org-people--get-property (property &optional name)
-  "Get PROPERTY for NAME."
-  (when-let ((name (or name (org-people-select-by-name)))
-             (plist (gethash name (org-people))))
-    (plist-get plist property)))
-
-(defun org-people-get-address (&optional name)
-  "Get the :ADDRESS property of the given contact"
-  (org-people--get-property :ADDRESS name))
-
-(defun org-people-get-email (&optional name)
-  "Get the :EMAIL property of the given contact"
-  (org-people--get-property :EMAIL name))
-
-(defun org-people-get-name (&optional name)
-  "Get the :NAME property of the given contact"
-  (org-people--get-property :NAME name))
-
-(defun org-people-get-phone (&optional name)
-  "Get the :PHONE property of the given contact"
-  (org-people--get-property :PHONE name))
-
-
-
-
-;;
-;; Insert single fields from a given contact.
-;;
-;; If no contact is specified prompt for one.
-;;
-
-(defun org-people-insert-address ()
-  "Insert the :ADDRESS property of a contact selected interactively by `org-people-select-by-name'."
-  (interactive)
-  (insert (or (org-people-get-address) "")))
-
-
-(defun org-people-insert-email ()
-  "Insert the :EMAIL property of a contact selected interactively by `org-people-select-by-name'."
-  (interactive)
-  (insert (or (org-people-get-email) "")))
-
-
-(defun org-people-insert-name ()
-  "Insert the full name of a contact selected interactively by `org-people-select-by-name'."
-  (interactive)
-  (insert (or (org-people-get-name) "")))
-
-
-(defun org-people-insert-phone ()
-  "Insert the :PHONE property of a contact selected interactively by `org-people-select-by-name'."
-  (interactive)
-  (insert (or (org-people-get-phone) "")))
-
-
-
-
-;;
-;; Misc
-;;
-
-(defun org-people-by-tag (tag)
-  "Return a simple list of contacts filtered by TAG.
-
-This is useful to create `org-mode' tables and allow them to be updated easily."
-  (let ((people (org-people (list tag)))
-        (result))
-    (maphash
-     (lambda (name plist)
-       (let ((phone (or (plist-get plist :PHONE) ""))
-             (email (or (plist-get plist :EMAIL) "")))
-         (push (list name phone email) result)))
-     people)
-    (nreverse result)))
 
 
 (defun org-people--format-plist (plist template)
@@ -324,6 +281,10 @@ This function is used by `org-people-summary'."
             (fallback (match-string 3 match))
             (key (intern (concat ":" key-str)))
             (val (plist-get plist key)))
+
+       ;; If the value is a list, flatten.  This is for :TAGS
+       (if (listp val)
+           (setq val (mapconcat 'identity val ",")))
 
        ;; Apply fallback if missing or empty
        (setq val (if (and val (not (equal val "")))
@@ -361,7 +322,7 @@ results."
 
   ;; create replacement buffer.
   (pop-to-buffer (get-buffer-create org-people-summary-buffer-name))
-  (let ((people (org-people)))
+  (let ((people (org-people-parse)))
     (maphash
      (lambda (name plist)
        (insert (org-people--format-plist plist org-people-summary-template))
