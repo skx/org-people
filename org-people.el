@@ -184,25 +184,18 @@ See `org-people-get-by-property' for an example use of this function."
     result))
 
 
-(defun org-people-get-by-property (property value)
+(defun org-people-get-by-property (property value &optional regexp)
   "Return contacts by searching the contents of a specific property.
 
-For example :EMAIL equal to bob@example.com."
+By default an exact string match is applied, however if REGEXP is true
+regexp is used instead."
   (org-people-filter (lambda(plist)
                        (let ((found (plist-get plist property)))
-                         (if (string-equal value (or found ""))
-                             t)))))
-
-
-(defun org-people-get-by-property-regexp (property regexp)
-  "Return a contact by searching the contents of a specific property.
-
-For example :EMAIL matches '@example.com$'"
-  (org-people-filter (lambda(plist)
-                       (let ((found (plist-get plist property)))
-                         (if (string-match regexp (or found ""))
-                             t)))))
-
+                         (if regexp
+                             (if (string-match value (or found ""))
+                                 t)
+                           (if (string-equal value (or found ""))
+                             t))))))
 
 
 (defun org-people-by-tag (tag)
@@ -220,7 +213,6 @@ This is useful to create `org-mode' tables and allow them to be updated easily."
                  (push (list name phone email) result))))
      people)
     (nreverse result)))
-
 
 
 (defun org-people-insert ()
