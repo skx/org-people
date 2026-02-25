@@ -225,7 +225,7 @@ This function is designed to create an `org-mode' table, like so:
 
 #+NAME: family-contacts
 #+BEGIN_SRC elisp :results value table
-(org-people-tags-to-table "family" '(:NAME :PHONE))
+(org-people-tags-to-table \"family\" '(:NAME :PHONE))
 #+END_SRC
 
 PROPS is a list of property symbols to include, is nil we
