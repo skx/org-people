@@ -3,12 +3,15 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.5
+;; Version: 0.6
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.6 - The table-creating function has been renamed and updated.
+;;       Now you can specify the fields to return.
 ;;
 ;; 0.5 - Drop simple functions.  They can be user-driver.
 ;;       Added filtering options and rewrote code to use them.
@@ -198,19 +201,34 @@ regexp is used instead."
                              t))))))
 
 
-(defun org-people-by-tag (tag)
-  "Return a simple list of contacts filtered by TAG.
+(defun org-people-tags-to-table (tag &optional props)
+  "Return a list of contacts filtered by TAG.
 
-This is useful to create `org-mode' tables and allow them to be updated easily."
+This function is designed to create an `org-mode' table, like so:
+
+#+NAME: family-contacts
+#+BEGIN_SRC elisp :results value table
+(org-people-tags-to-table "family" '(:NAME :PHONE))
+#+END_SRC
+
+PROPS is a list of property symbols to include, is nil we
+default to '(:NAME :PHONE :EMAIL)."
   (let ((people (org-people-parse))
+        (props (or props '(:NAME :PHONE :EMAIL)))
         (result))
+    (push props result) ; header
     (maphash
      (lambda (name plist)
-       (let ((phone (or (plist-get plist :PHONE) ""))
-             (email (or (plist-get plist :EMAIL) ""))
-             (tags (or (plist-get plist :TAGS) '())))
-         (if (member tag tags)
-                 (push (list name phone email) result))))
+       (let ((tags (or (plist-get plist :TAGS) '())))
+         (when (member tag tags)
+           (push
+            (mapcar
+             (lambda (prop)
+               (if (eq prop :NAME)
+                   name
+                 (or (plist-get plist prop) "")))
+             props)
+            result))))
      people)
     (nreverse result)))
 
@@ -219,7 +237,7 @@ This is useful to create `org-mode' tables and allow them to be updated easily."
   "Insert a specific piece of data from a contact.
 
 This uses `org-people-select-interactively' to first prompt the user for contact
-name, and then a second interactive selection of the specific attribute
+name, and then a second interactive selection of the specific attribute value
 which should be inserted."
   (interactive)
   (let* ((person (org-people-select-interactively))

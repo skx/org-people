@@ -28,7 +28,8 @@ Here is an example "contacts.org" file:
 
 Here you see all contacts are stored beneath the "People" header, and we have two entries.
 
-We assume that you have "ADDRESS", "EMAIL", and "PHONE" properties, as we define helpers for working with those specific properties, but they are not mandatory and any additional properties you add can be found and worked with.
+We assume that you have "ADDRESS", "EMAIL", and "PHONE" properties.  There is no restricition
+upon the names of the properties, but these are the obvious basic values.
 
 
 
@@ -51,9 +52,11 @@ If you use `org-capture` you may use the following template to add a new entry:
 These are the main user-focused functions within the package to work with contacts:
 
 * `org-people-insert`
-  * Insert contact-data into the buffer.
+  * Insert contact-data into the buffer, via interactive prompts (with `completing-read`)
 * `org-people-summary`
-  * Parse all known contacts and pop to a buffer containing a CSV summary of them.
+  * Parse all known contacts and pop to a buffer containing a summary of their details.
+* `org-people-tags-to-table`
+  * Designed to create auto-updating tables inside `org-mode` documents.
 
 Suggested usage:
 
@@ -68,7 +71,7 @@ Suggested usage:
 (global-set-key (kbd "C-c P") '(lambda() (interactive) (find-file org-people-file)))
 ```
 
-There are functions for working with the parsed contacts, such as:
+There are also functions for working with the parsed contacts:
 
 * `org-people-parse`
   * Parse all known contacts and return a hash of them.
@@ -99,10 +102,14 @@ If you tag the entries within the people hierarchy you can then create org-mode 
 
 For example the following can auto-update:
 
-```
-'#+NAME: get-colleagues-contacts
-'#+BEGIN_SRC elisp :results value table
-(cons '("Name" "Phone" "Email")
-       (org-people-by-tag "colleagues"))
-'#+END_SRC
-```
+    #+NAME: get-colleagues-contacts
+    #+BEGIN_SRC elisp :results value table
+    (org-people-tags-to-table "family")
+    #+END_SRC
+
+If you prefer different columns you can specify them:
+
+    #+NAME: get-colleagues-contacts
+    #+BEGIN_SRC elisp :results value table
+    (org-people-tags-to-table "family" '(:NAME :PHONE))
+    #+END_SRC
