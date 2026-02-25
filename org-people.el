@@ -3,12 +3,14 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.6
+;; Version: 0.7
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.7 - Provide annotations for name-completion.
 ;;
 ;; 0.6 - The table-creating function has been renamed and updated.
 ;;       Now you can specify the fields to return.
@@ -156,11 +158,37 @@ to avoid re-parsing unnecessarily."
   (sort (hash-table-keys (org-people-parse)) #'string<))
 
 
+(defun org-people--completion-annotation (name)
+  "Return an annotation string for contact NAME."
+  (let* ((plist (org-people-get-by-name name))
+         (email (plist-get plist :EMAIL))
+         (phone (plist-get plist :PHONE)))
+    (concat
+     (when email
+       (format "  [%s]" email))
+     (when phone
+       (format "  ☎ %s" phone)))))
+
+
+(defun org-people--completion-table (string pred action)
+  "Return a completion-table for contact completion."
+  (if (eq action 'metadata)
+      '(metadata
+        (annotation-function . org-people--completion-annotation)
+        (category . org-people))
+    (complete-with-action action
+                          (org-people-names)
+                          string pred)))
+
+
 (defun org-people-select-interactively ()
-  "Use `completing-read' to select a single contact name.
+  "Use `completing-read' to select a single contact name, with annotations.
 
 All known contacts are presented, as determined by `org-people-names'."
-  (completing-read "Contact name: " (org-people-names) nil t))
+  (completing-read
+   "Contact name: "
+   #'org-people--completion-table
+   nil t))
 
 
 (defun org-people-get-by-name (name)
@@ -177,14 +205,10 @@ PRED-P should be a function which accepts the plist of properties associated
 with a given contact, and returns `t' if they should be kept.
 
 See `org-people-get-by-property' for an example use of this function."
-  (let ((people (org-people-parse))
-        (result (make-hash-table :test #'equal)))
-    (maphash
-     (lambda (name plist)
-       (if (funcall pred-p plist)
-           (puthash name plist result)))
-     people)
-    result))
+  (cl-loop
+   for plist being the hash-values of (org-people-parse)
+   when (funcall pred-p plist)
+   collect plist))
 
 
 (defun org-people-get-by-property (property value &optional regexp)
@@ -313,7 +337,6 @@ This function is used by `org-people-summary'."
              (format (format "%%%ds" width) val))
          val)))
    template t t))
-
 
 (defun org-people-summary ()
   "Create a popup buffer containing a summary of all known contacts.
