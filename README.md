@@ -28,7 +28,7 @@ Here is an example "contacts.org" file:
 
 Here you see all contacts are stored beneath the "People" header, and we have two entries.
 
-We assume that you have "ADDRESS", "EMAIL", and "PHONE" properties.  There is no restricition
+We assume that you have "ADDRESS", "EMAIL", and "PHONE" properties.  There is no restriction
 upon the names of the properties, but these are the obvious basic values.
 
 
@@ -52,7 +52,7 @@ If you use `org-capture` you may use the following template to add a new entry:
 These are the main user-focused functions within the package to work with contacts:
 
 * `org-people-insert`
-  * Insert contact-data into the buffer, via interactive prompts (with `completing-read`)
+  * Insert contact-data into the buffer, via interactive prompts (with `completing-read`).
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a summary of their details.
 * `org-people-tags-to-table`
