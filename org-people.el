@@ -276,11 +276,13 @@ which should be inserted."
 ;; Summary-view of contacts.
 ;;
 
-(defun org-people-list ()
+
+(defun org-people--list ()
   "Return a list of all contact plists."
   (cl-loop
    for plist being the hash-values of (org-people-parse)
    collect plist))
+
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
@@ -310,11 +312,13 @@ which should be inserted."
                            ",")))
     (list name (vector name email phone tags))))
 
+
 (defun org-people-summary--refresh ()
   "Populate `tabulated-list-entries'."
   (setq tabulated-list-entries
         (mapcar #'org-people-summary--entry
-                (org-people-list))))
+                (org-people--list))))
+
 
 (defun org-people-summary--open ()
   "Open the Org entry for the contact at point."
@@ -348,6 +352,30 @@ which should be inserted."
                 (cl-return-from find-contact))))))
       (unless found
         (user-error "Could not find org entry for %s" name)))))
+
+
+(defun org-people-summary--copy-field ()
+  "Copy the value of the field under point to the clipboard."
+ (interactive)
+  (let* ((entry (tabulated-list-get-entry))
+         (columns tabulated-list-format)
+         (start 0)
+         col)
+    ;; Determine which column the point is in
+    (catch 'found
+      (dotimes (i (length columns))
+        (let* ((col-info (if (vectorp columns) (aref columns i) (nth i columns)))
+               (width (if (vectorp col-info) (aref col-info 1) (nth 1 col-info))))
+          (when (<= start (current-column) (+ start width))
+            (setq col i)
+            (throw 'found t))
+          (setq start (+ start width)))))
+    ;; Copy value if found
+    (if (and entry col)
+        (let ((value (aref entry col)))  ;; entry is always a vector
+          (kill-new value)
+          (message "Copied: %s" value))
+      (message "Could not determine field under point"))))
 
 
 (defun org-people-summary--filter-by-property ()
@@ -395,6 +423,7 @@ Filtering can be applied (using a regexp) by pressing 'f'."
 
 ;; Open the contact details on RET, filter by `f'.
 (define-key org-people-summary-mode-map (kbd "RET") #'org-people-summary--open)
+(define-key org-people-summary-mode-map (kbd "c") #'org-people-summary--copy-field)
 (define-key org-people-summary-mode-map (kbd "f") #'org-people-summary--filter-by-property)
 
 ;; package time is over now.
