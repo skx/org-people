@@ -11,6 +11,7 @@
 ;; Version History (brief)
 ;;
 ;; 0.7 - Provide annotations for name-completion.
+;;       Switch the org-people-summary to using tabulated-list-mode.
 ;;
 ;; 0.6 - The table-creating function has been renamed and updated.
 ;;       Now you can specify the fields to return.
@@ -76,14 +77,6 @@ we only process level-two headings beneath the header named by `org-people-headl
   :type 'string
   :group 'org-people)
 
-
-(defcustom org-people-summary-template
-  "{NAME} {PHONE} {EMAIL} {TAGS}"
-  "The format of the string to insert into the buffer when `org-people-summary' is invoked.
-
-Each entry will be formatted with this string by `org-people--format-plist' and terminated with a newline."
-  :type 'string
-  :group 'org-people)
 
 
 
@@ -280,94 +273,129 @@ which should be inserted."
 
 
 ;;
-;; These are helpful functions, added over time, using the primitives above.
-;;
-;; These could have been written by users of our package.
+;; Summary-view of contacts.
 ;;
 
+(defun org-people-list ()
+  "Return a list of all contact plists."
+  (cl-loop
+   for plist being the hash-values of (org-people-parse)
+   collect plist))
 
-(defun org-people--format-plist (plist template)
-  "Format TEMPLATE replacing:
+(define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
+  "Major mode for listing Org People contacts."
 
-  {KEY}
-  {KEY|fallback}
-  {KEY:WIDTH}
-  {KEY:WIDTH|fallback}
+  (setq tabulated-list-format
+        [("Name" 30 t)
+         ("Email" 30 t)
+         ("Phone" 15 t)
+         ("Tags"  20 t)])
 
-WIDTH works like `format':
-  positive  -> right aligned
-  negative  -> left aligned
+  (setq tabulated-list-padding 2)
+  (setq tabulated-list-sort-key (cons "Name" nil))
 
-Values longer than WIDTH are truncated.
+  (add-hook 'tabulated-list-revert-hook
+            #'org-people-summary--refresh
+            nil t)
 
-When a key is not found it is replaced with the fallback if present, otherwise nothing.
+  (tabulated-list-init-header))
 
-This function is used by `org-people-summary'."
-  (replace-regexp-in-string
-   "{\\([^}|:]+\\)\\(?::\\([-0-9]+\\)\\)?\\(?:|\\([^}]*\\)\\)?}"
-   (lambda (match)
-     ;; Re-match against the match itself to extract groups
-     (string-match
-      "{\\([^}|:]+\\)\\(?::\\([-0-9]+\\)\\)?\\(?:|\\([^}]*\\)\\)?}"
-      match)
-     (let* ((key-str (match-string 1 match))
-            (width-str (match-string 2 match))
-            (fallback (match-string 3 match))
-            (key (intern (concat ":" key-str)))
-            (val (plist-get plist key)))
+(defun org-people-summary--entry (plist)
+  "Convert PLIST to a `tabulated-list-mode' entry."
+  (let* ((name  (or (plist-get plist :NAME) ""))
+         (email (or (plist-get plist :EMAIL) ""))
+         (phone (or (plist-get plist :PHONE) ""))
+         (tags  (mapconcat #'identity
+                           (or (plist-get plist :TAGS) '())
+                           ",")))
+    (list name (vector name email phone tags))))
 
-       ;; If the value is a list, flatten.  This is for :TAGS
-       (if (listp val)
-           (setq val (mapconcat 'identity val ",")))
+(defun org-people-summary--refresh ()
+  "Populate `tabulated-list-entries'."
+  (setq tabulated-list-entries
+        (mapcar #'org-people-summary--entry
+                (org-people-list))))
 
-       ;; Apply fallback if missing or empty
-       (setq val (if (and val (not (equal val "")))
-                     val
-                   (or fallback "")))
+(defun org-people-summary--open ()
+  "Open the Org entry for the contact at point."
+  (interactive)
+  (let* ((name (tabulated-list-get-id))
+         (plist (org-people-get-by-name name)))
+    (unless plist
+      (user-error "No contact found: %s" name))
+    ;; Open the org file
+    (find-file org-people-file)
+    (goto-char (point-min))
+    ;; Search for the headline with this name under the main headline
+    (let ((headline-regexp
+           (format org-complex-heading-regexp-format
+                   (regexp-quote org-people-headline)))
+          found)
+      (when (re-search-forward headline-regexp nil t)
+        (let ((root-level (org-outline-level))
+              (subtree-end (save-excursion (org-end-of-subtree t))))
+          (cl-block find-contact
+            (forward-line)
+            (while (and (< (point) subtree-end)
+                        (re-search-forward org-heading-regexp subtree-end t))
+              (when (and (= (org-outline-level) (1+ root-level))
+                         (string= name (nth 4 (org-heading-components))))
+                (setq found t)
+                (goto-char (match-beginning 0))
+                (org-show-entry)
+                (org-reveal)
+                (message "Opened %s" name)
+                (cl-return-from find-contact))))))
+      (unless found
+        (user-error "Could not find org entry for %s" name)))))
 
-       ;; Apply width and truncation
-       (if width-str
-           (let* ((width (string-to-number width-str))
-                  (abs-width (abs width))
-                  ;; truncate if needed
-                  (val (if (> (length val) abs-width)
-                           (substring val 0 abs-width)
-                         val)))
-             ;; pad using format
-             (format (format "%%%ds" width) val))
-         val)))
-   template t t))
+
+(defun org-people-summary--filter-by-property ()
+  "Filter contacts interactively by a property value."
+  (interactive)
+  (let* ((prop-str (completing-read
+                    "Property (e.g., :EMAIL, :PHONE, :TAGS): "
+                    '(":NAME" ":EMAIL" ":PHONE" ":TAGS")
+                    nil t))
+         (prop (intern prop-str))
+         (value (read-string (format "Value to match for %s: " prop-str))))
+    ;; Filter list
+    (let ((filtered
+           (org-people-filter
+            (lambda (plist)
+              (let ((v (plist-get plist prop)))
+                (cond
+                 ((listp v) (member value v))
+                 ((stringp v) (string-match value v))
+                 (t nil)))))))
+      ;; Refresh buffer
+      (with-current-buffer org-people-summary-buffer-name
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (setq tabulated-list-entries
+                (mapcar #'org-people-summary--entry filtered))
+          (tabulated-list-print t))))))
+
 
 (defun org-people-summary ()
-  "Create a popup buffer containing a summary of all known contacts.
+  "Display contacts using `tabulated-list-mode'.
 
-By default we insert the name, phone, and email addresses, but the
-specified fields to be inserted are specified by the format string
-which is stored in `org-people-summary-template'.
+This allow sorting by each column, etc.
 
-The buffer created is specified by `org-people-summary-buffer-name',
-and `view-mode' is enabled once complete to allow 'q' to bury the
-results."
+Filtering can be applied (using a regexp) by pressing 'f'."
   (interactive)
-  ;; get, and kill, any pre-existing buffer with this name.
-  (when-let ((buf (get-buffer org-people-summary-buffer-name)))
-    (kill-buffer buf))
 
-  ;; create replacement buffer.
-  (pop-to-buffer (get-buffer-create org-people-summary-buffer-name))
-  (let ((people (org-people-parse)))
-    (maphash
-     (lambda (name plist)
-       (insert (org-people--format-plist plist org-people-summary-template))
-       (insert "\n"))
-     people))
-  (goto-char (point-min))
-  (view-mode))
+  (let ((buf (get-buffer-create org-people-summary-buffer-name)))
+    (with-current-buffer buf
+      (org-people-summary-mode)
+      (org-people-summary--refresh)
+      (tabulated-list-print t))
+    (pop-to-buffer buf)))
 
 
-
-
-
+;; Open the contact details on RET, filter by `f'.
+(define-key org-people-summary-mode-map (kbd "RET") #'org-people-summary--open)
+(define-key org-people-summary-mode-map (kbd "f") #'org-people-summary--filter-by-property)
 
 ;; package time is over now.
 (provide 'org-people)
