@@ -3,12 +3,15 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.7
+;; Version: 0.8
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.8 - Provide "[[person:Name Here]]" support with completion, clicking, and export attributes.
+;;       Make org-people-open public and usefully available.
 ;;
 ;; 0.7 - Provide annotations for name-completion.
 ;;       Switch the org-people-summary to using tabulated-list-mode.
@@ -269,6 +272,41 @@ which should be inserted."
       (insert (or (plist-get values choice) "")))))
 
 
+(defun org-people-browse-name (&optional name)
+  "Open the Org entry for NAME.
+
+If NAME is not set then prompt for it interactively.
+
+This is used by our [[people:xxx]] handler."
+  (interactive)
+  (if (not name)
+      (setq name (org-people-select-interactively)))
+  ;; Open the org file
+  (find-file org-people-file)
+  (goto-char (point-min))
+  ;; Search for the headline with this name under the main headline
+  (let ((headline-regexp
+         (format org-complex-heading-regexp-format
+                 (regexp-quote org-people-headline)))
+        found)
+    (when (re-search-forward headline-regexp nil t)
+      (let ((root-level (org-outline-level))
+            (subtree-end (save-excursion (org-end-of-subtree t))))
+        (cl-block find-contact
+          (forward-line)
+          (while (and (< (point) subtree-end)
+                      (re-search-forward org-heading-regexp subtree-end t))
+            (when (and (= (org-outline-level) (1+ root-level))
+                       (string= name (nth 4 (org-heading-components))))
+              (setq found t)
+              (goto-char (match-beginning 0))
+              (org-show-entry)
+              (org-reveal)
+              (message "Opened %s" name)
+              (cl-return-from find-contact))))))
+    (unless found
+      (user-error "Could not find org entry for %s" name))))
+
 
 
 
@@ -327,31 +365,20 @@ which should be inserted."
          (plist (org-people-get-by-name name)))
     (unless plist
       (user-error "No contact found: %s" name))
-    ;; Open the org file
-    (find-file org-people-file)
-    (goto-char (point-min))
-    ;; Search for the headline with this name under the main headline
-    (let ((headline-regexp
-           (format org-complex-heading-regexp-format
-                   (regexp-quote org-people-headline)))
-          found)
-      (when (re-search-forward headline-regexp nil t)
-        (let ((root-level (org-outline-level))
-              (subtree-end (save-excursion (org-end-of-subtree t))))
-          (cl-block find-contact
-            (forward-line)
-            (while (and (< (point) subtree-end)
-                        (re-search-forward org-heading-regexp subtree-end t))
-              (when (and (= (org-outline-level) (1+ root-level))
-                         (string= name (nth 4 (org-heading-components))))
-                (setq found t)
-                (goto-char (match-beginning 0))
-                (org-show-entry)
-                (org-reveal)
-                (message "Opened %s" name)
-                (cl-return-from find-contact))))))
-      (unless found
-        (user-error "Could not find org entry for %s" name)))))
+    (org-people-browse-name name)))
+
+
+(defun org-people--export-person-link (path desc backend)
+  "Export a person link for BACKEND.
+PATH is the person name, DESC is the description.
+
+We just make the name bold."
+  (let ((name (or desc path)))
+    (cond
+     ((eq backend 'html)
+      (format "<strong>%s</strong>" name))
+     (t
+      name))))
 
 
 (defun org-people-summary--copy-field ()
@@ -425,6 +452,26 @@ Filtering can be applied (using a regexp) by pressing 'f'."
 (define-key org-people-summary-mode-map (kbd "RET") #'org-people-summary--open)
 (define-key org-people-summary-mode-map (kbd "c") #'org-people-summary--copy-field)
 (define-key org-people-summary-mode-map (kbd "f") #'org-people-summary--filter-by-property)
+
+
+;;
+;; Define a handler for "person:XXX" and "org-person:XXX"
+;;
+(org-link-set-parameters
+ "person"
+ :complete #'org-people-select-interactively
+ :export   #'org-people--export-person-link
+ :follow   #'org-people-open
+ :help-echo "Open the contacts-file at the position of the named person, via org-people")
+
+
+(org-link-set-parameters
+ "org-person"
+ :complete #'org-people-select-interactively
+ :export   #'org-people--export-person-link
+ :follow   #'org-people-open
+ :help-echo "Open the contacts-file at the position of the named person, via org-people")
+
 
 ;; package time is over now.
 (provide 'org-people)

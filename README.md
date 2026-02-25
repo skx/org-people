@@ -96,6 +96,21 @@ There are two configuration items you might wish to change:
 
 
 
+## org-mode links
+
+This package defines `people:` and `org-people:` handlers, to jump to your contact-list entries when clicked.
+
+Inside org-mode files just create links using those protocols:
+
+    * This is a headline
+    [[people:Steve Kemp]] wrote this package.
+
+This will open `org-people-file` and jump to the entry for the person (me).
+
+When exported to HTML the person name will be made bold, rather than becoming a link, which is probably what you want.
+
+
+
 ## Dynamic `org-mode` tables
 
 If you tag the entries within the people hierarchy you can then create org-mode tables of matching entries.
