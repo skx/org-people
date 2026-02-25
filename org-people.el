@@ -11,7 +11,7 @@
 ;; Version History (brief)
 ;;
 ;; 0.8 - Provide "[[person:Name Here]]" support with completion, clicking, and export attributes.
-;;       Make org-people-open public and usefully available.
+;;       Make org-people-browse-name public and usefully available.
 ;;
 ;; 0.7 - Provide annotations for name-completion.
 ;;       Switch the org-people-summary to using tabulated-list-mode.
@@ -461,7 +461,7 @@ Filtering can be applied (using a regexp) by pressing 'f'."
  "person"
  :complete #'org-people-select-interactively
  :export   #'org-people--export-person-link
- :follow   #'org-people-open
+ :follow   #'org-people-browse-name
  :help-echo "Open the contacts-file at the position of the named person, via org-people")
 
 
@@ -469,7 +469,7 @@ Filtering can be applied (using a regexp) by pressing 'f'."
  "org-person"
  :complete #'org-people-select-interactively
  :export   #'org-people--export-person-link
- :follow   #'org-people-open
+ :follow   #'org-people-browse-name
  :help-echo "Open the contacts-file at the position of the named person, via org-people")
 
 
