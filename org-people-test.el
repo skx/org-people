@@ -111,7 +111,7 @@ Alice doesn't love [[org-people:Bob Jones]]
   "Test org-people-person-to-table generates expected table."
   (org-people--with-mocked-people org-people--mock-org
     (let ((rows (org-people-person-to-table "Bob Jones")))
-      (should (equal (mapcar #'car rows) '("Category" "Email" "Name" "Phone" "Tags")))
+      (should (equal (mapcar #'car rows) '("Category" "Email" "Marker" "Name" "Phone" "Tags")))
       (let ((plist (org-people-get-by-name "Bob Jones")))
         (dolist (row rows)
           (let ((key (car row)) (val (cadr row)))
