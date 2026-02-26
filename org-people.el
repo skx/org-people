@@ -11,6 +11,7 @@
 ;; Version History (brief)
 ;;
 ;; 0.9 - org-people-person-to-table shows all the data about one individual as an `org-mode' table.
+;;       Added test-cases in new file, org-people-test.el
 ;;
 ;; 0.8 - Provide "[[person:Name Here]]" support with completion, clicking, and export attributes.
 ;;       Make org-people-browse-name public and usefully available.

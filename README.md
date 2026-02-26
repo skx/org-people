@@ -47,7 +47,7 @@ If you use `org-capture` you may use the following template to add a new entry:
 
 
 
-## Working With People
+## API / Functions
 
 These are the main user-focused functions within the package to work with contacts:
 
@@ -55,7 +55,10 @@ These are the main user-focused functions within the package to work with contac
   * Insert contact-data into the buffer, via interactive prompts (with `completing-read`).
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a summary of their details.
+  * This uses `tabulated-list-mode` and allows you to sort and copy fields, etc.
 * `org-people-tags-to-table`
+  * Designed to create auto-updating tables inside `org-mode` documents.
+* `org-people-person-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
 
 Suggested usage:
@@ -98,12 +101,12 @@ There are two configuration items you might wish to change:
 
 ## org-mode links
 
-This package defines `people:` and `org-people:` handlers, to jump to your contact-list entries when clicked.
+This package defines an `org-people:` handler, to jump to your contact-list entries when clicked.
 
-Inside org-mode files just create links using those protocols:
+Inside org-mode files just create links using that protocols:
 
     * This is a headline
-    [[people:Steve Kemp]] wrote this package.
+    [[org-people:Steve Kemp]] wrote this package.
 
 This will open `org-people-file` and jump to the entry for the person (me).
 
@@ -145,3 +148,11 @@ You can also include all data about a single named individual, by name:
     | Name        | Steve Kemp                              |
     | Phone       | +358123456789                           |
     | Tags        | (me)                                    |
+
+
+
+## Testing
+
+Load the file [org-people-test.el](org-people-test.el) and run `M-x eval buffer`, you should see the test results in a new buffer.
+
+If any tests fail that's a bug.
