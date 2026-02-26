@@ -3,12 +3,14 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.8
+;; Version: 0.9
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 0.9 - org-people-person-to-table shows all the data about one individual as an `org-mode' table.
 ;;
 ;; 0.8 - Provide "[[person:Name Here]]" support with completion, clicking, and export attributes.
 ;;       Make org-people-browse-name public and usefully available.
@@ -219,6 +221,39 @@ regexp is used instead."
                                  t)
                            (if (string-equal value (or found ""))
                              t))))))
+
+
+(defun org-people-person-to-table(name)
+  "Return table-data about a named contact.
+
+This function is designed to create an `org-mode' table, like so:
+
+#+NAME: myself
+#+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
+(org-people-person-to-table \"Steve Kemp\")
+#+END_SRC
+"
+  (let* ((plist (org-people-get-by-name name))
+         ;; Convert plist to list of (key . value) pairs
+         (pairs (seq-partition plist 2))
+         ;; Sort pairs alphabetically by key name (without leading :)
+         (sorted
+          (sort pairs
+                (lambda (a b)
+                  (string<
+                   (substring (symbol-name (car a)) 1)
+                   (substring (symbol-name (car b)) 1)))))
+         ;; Convert to rows
+         (rows
+          (mapcar
+           (lambda (pair)
+             (list
+              (capitalize
+               (substring (symbol-name (car pair)) 1))
+              (cadr pair)))
+           sorted)))
+    rows))
+
 
 
 (defun org-people-tags-to-table (tag &optional props)

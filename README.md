@@ -114,7 +114,6 @@ When exported to HTML the person name will be made bold, rather than becoming a 
 ## Dynamic `org-mode` tables
 
 If you tag the entries within the people hierarchy you can then create org-mode tables of matching entries.
-
 For example the following can auto-update:
 
     #+NAME: get-colleagues-contacts
@@ -128,3 +127,21 @@ If you prefer different columns you can specify them:
     #+BEGIN_SRC elisp :results value table
     (org-people-tags-to-table "family" '(:NAME :PHONE))
     #+END_SRC
+
+You can also include all data about a single named individual, by name:
+
+    #+NAME: steve-kemp
+    #+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
+    (org-people-person-to-table "Steve Kemp")
+    #+END_SRC
+
+    #+RESULTS: steve-kemp
+    | Field       | Value                                   |
+    |-------------+-----------------------------------------|
+    | Address     | Helsinki, Finland                       |
+    | Category    | PEOPLE                                  |
+    | Country     | Finland                                 |
+    | Email       | steve@steve.fi                          |
+    | Name        | Steve Kemp                              |
+    | Phone       | +358123456789                           |
+    | Tags        | (me)                                    |
