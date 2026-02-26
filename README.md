@@ -106,6 +106,8 @@ This will jump to the definition of the named person (me).
 
 When exported to HTML the person name will be made bold, rather than becoming a link, which is probably what you want.
 
+You can add such a link via C-c C-l, as per usual, with TAB-completion support
+
 
 
 ## Dynamic `org-mode` tables
@@ -113,16 +115,16 @@ When exported to HTML the person name will be made bold, rather than becoming a 
 If you tag the entries within the people hierarchy you can then create org-mode tables of matching entries.
 For example the following can auto-update:
 
-    #+NAME: get-colleagues-contacts
+    #+NAME: get-family-contacts
     #+BEGIN_SRC elisp :results value table
     (org-people-tags-to-table "family")
     #+END_SRC
 
 If you prefer different columns you can specify them:
 
-    #+NAME: get-colleagues-contacts
+    #+NAME: get-family-contacts
     #+BEGIN_SRC elisp :results value table
-    (org-people-tags-to-table "family" '(:NAME :PHONE))
+    (org-people-tags-to-table "family" '(:LINK :PHONE))
     #+END_SRC
 
 You can also include all data about a single named individual, by name:
