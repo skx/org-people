@@ -13,7 +13,7 @@
 ;; 0.9 - org-people-person-to-table shows all the data about one individual as an `org-mode' table.
 ;;       Added test-cases in new file, org-people-test.el
 ;;
-;; 0.8 - Provide "[[person:Name Here]]" support with completion, clicking, and export attributes.
+;; 0.8 - Provide "[[org-person:Name Here]]" support with completion, clicking, and export attributes.
 ;;       Make org-people-browse-name public and usefully available.
 ;;
 ;; 0.7 - Provide annotations for name-completion.
@@ -376,6 +376,7 @@ This is used by our [[people:xxx]] handler."
 
   (tabulated-list-init-header))
 
+
 (defun org-people-summary--entry (plist)
   "Convert PLIST to a `tabulated-list-mode' entry."
   (let* ((name  (or (plist-get plist :NAME) ""))
@@ -491,16 +492,8 @@ Filtering can be applied (using a regexp) by pressing 'f'."
 
 
 ;;
-;; Define a handler for "person:XXX" and "org-person:XXX"
+;; Define a handler for a link of the form "org-person:XXX"
 ;;
-(org-link-set-parameters
- "person"
- :complete #'org-people-select-interactively
- :export   #'org-people--export-person-link
- :follow   #'org-people-browse-name
- :help-echo "Open the contacts-file at the position of the named person, via org-people")
-
-
 (org-link-set-parameters
  "org-person"
  :complete #'org-people-select-interactively
