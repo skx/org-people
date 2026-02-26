@@ -229,9 +229,11 @@ This function is designed to create an `org-mode' table, like so:
 #+END_SRC
 
 PROPS is a list of property symbols to include, is nil we
-default to '(:NAME :PHONE :EMAIL)."
+default to '(:NAME :PHONE :EMAIL).
+
+The special value :LINK: will expand to a clickable link, using the org-people: handler."
   (let ((people (org-people-parse))
-        (props (or props '(:NAME :PHONE :EMAIL)))
+        (props (or props '(:LINK :PHONE :EMAIL)))
         (result))
     (push props result) ; header
     (maphash
@@ -243,7 +245,9 @@ default to '(:NAME :PHONE :EMAIL)."
              (lambda (prop)
                (if (eq prop :NAME)
                    name
-                 (or (plist-get plist prop) "")))
+                 (if (eq prop :LINK)
+                     (org-link-make-string (concat  "[[org-people:" name "][" name "]]"))
+                   (or (plist-get plist prop) ""))))
              props)
             result))))
      people)
