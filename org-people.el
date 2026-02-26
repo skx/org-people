@@ -495,7 +495,7 @@ Filtering can be applied (using a regexp) by pressing 'f'."
 ;; Define a handler for a link of the form "org-person:XXX"
 ;;
 (org-link-set-parameters
- "org-person"
+ "org-people"
  :complete #'org-people-select-interactively
  :export   #'org-people--export-person-link
  :follow   #'org-people-browse-name
