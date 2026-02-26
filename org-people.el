@@ -229,7 +229,7 @@ regexp is used instead."
 This function is designed to create an `org-mode' table, like so:
 
 #+NAME: myself
-#+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
+#+BEGIN_SRC elisp :results value table :colnames '(\"Field\" \"Value\")
 (org-people-person-to-table \"Steve Kemp\")
 #+END_SRC
 "
