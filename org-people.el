@@ -42,6 +42,7 @@
 
 
 (require 'org)
+(require 'seq)
 (require 'cl-lib)
 
 
@@ -90,6 +91,7 @@ undue performance problems regardless of the number of contacts you have."
              ;; Save the details if we have more than one property present.
              (when (and plist (> (/ (length plist) 2) 1))
                (setq plist (plist-put plist :NAME name))
+               (setq plist (plist-put plist :MARKER (point-marker)))
                (setq plist (plist-put plist :TAGS entry-tags))
                (puthash name plist table))
              table))
@@ -278,32 +280,10 @@ This is used by our [[people:xxx]] handler."
   (interactive)
   (if (not name)
       (setq name (org-people-select-interactively)))
-  ;; Open the org file
-  (find-file org-people-file)
-  (goto-char (point-min))
-  ;; Search for the headline with this name under the main headline
-  (let ((headline-regexp
-         (format org-complex-heading-regexp-format
-                 (regexp-quote org-people-headline)))
-        found)
-    (when (re-search-forward headline-regexp nil t)
-      (let ((root-level (org-outline-level))
-            (subtree-end (save-excursion (org-end-of-subtree t))))
-        (cl-block find-contact
-          (forward-line)
-          (while (and (< (point) subtree-end)
-                      (re-search-forward org-heading-regexp subtree-end t))
-            (when (and (= (org-outline-level) (1+ root-level))
-                       (string= name (nth 4 (org-heading-components))))
-              (setq found t)
-              (goto-char (match-beginning 0))
-              (org-show-entry)
-              (org-reveal)
-              (message "Opened %s" name)
-              (cl-return-from find-contact))))))
-    (unless found
-      (user-error "Could not find org entry for %s" name))))
-
+  (let ((marker (plist-get (org-people-get-by-name name) :MARKER)))
+    (switch-to-buffer (marker-buffer marker))
+    (goto-char marker)
+    (org-reveal)))
 
 
 
@@ -312,7 +292,7 @@ This is used by our [[people:xxx]] handler."
 ;;
 
 
-(defun org-people--list ()
+(defun org-people--all-plists ()
   "Return a list of all contact plists."
   (cl-loop
    for plist being the hash-values of (org-people-parse)
@@ -356,7 +336,7 @@ This is used by our [[people:xxx]] handler."
   "Populate `tabulated-list-entries'."
   (setq tabulated-list-entries
         (mapcar #'org-people-summary--entry
-                (org-people--list))))
+                (org-people--all-plists))))
 
 
 
