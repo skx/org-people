@@ -34,21 +34,27 @@ Alice doesn't love [[org-people:Bob Jones]]
 (defvar org-people--test-file "org-people-test.org")
 
 (defmacro org-people--with-mocked-people (contents &rest body)
-  "Run BODY with org-people reading from a fixed org file with CONTENTS.
-
-The file used is `org-people--test-file'."
+  "Run BODY with org-people reading from a fixed org file with CONTENTS."
   `(let ((org-people-file org-people--test-file))
+     ;; Clean up any previous buffer + file
+     (when-let ((buf (get-file-buffer org-people--test-file)))
+       (kill-buffer buf))
      (when (file-exists-p org-people--test-file)
        (delete-file org-people--test-file))
+
+     ;; Write fresh file
      (with-temp-file org-people--test-file
        (insert ,contents)
        (unless (string-suffix-p "\n" ,contents)
          (insert "\n")))
+
      (unwind-protect
          (progn ,@body)
+       ;; Final cleanup: kill buffer and delete file
+       (when-let ((buf (get-file-buffer org-people--test-file)))
+         (kill-buffer buf))
        (when (file-exists-p org-people--test-file)
          (delete-file org-people--test-file)))))
-
 
 ;;
 ;; Test cases follow
@@ -146,13 +152,12 @@ The file used is `org-people--test-file'."
 (ert-deftest org-people-get-by-property-literal-test ()
   "Test org-people-get-by-property returns correct filtered table without a regexp"
   ;; literal
-  (ert-deftest org-people-get-by-property-regexp-test ()
-    (org-people--with-mocked-people org-people--mock-org
-      (let ((results (org-people-get-by-property :EMAIL "bob@example.com")))
-        (should (listp results))
-        (should (equal (sort (mapcar (lambda (plist) (plist-get plist :NAME)) results))
-                       '("Bob Jones")))
-        ))))
+  (org-people--with-mocked-people org-people--mock-org
+  (let ((results (org-people-get-by-property :EMAIL "bob@example.com")))
+    (should (listp results))
+    (should (equal (sort (mapcar (lambda (plist) (plist-get plist :NAME)) results))
+                   '("Bob Jones")))
+    )))
 
 
 

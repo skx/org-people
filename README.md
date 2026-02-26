@@ -153,6 +153,6 @@ You can also include all data about a single named individual, by name:
 
 ## Testing
 
-Load the file [org-people-test.el](org-people-test.el) and run `M-x eval buffer`, you should see the test results in a new buffer.
+You can run `make test` via the supplied [Makefile](Makefile) to run the tests in a batch-mode, otherwise load the file [org-people-test.el](org-people-test.el) and run `M-x eval buffer`, you should see the test results in a new buffer.
 
 If any tests fail that's a bug.
