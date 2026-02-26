@@ -3,12 +3,15 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 0.9
+;; Version: 1.0
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 1.0 - Process all agenda-files by default, via a tag search for ":contact:" (by default).
+;;       This is more generally useful, and removes configuration and our ad-hoc caching implementation.
 ;;
 ;; 0.9 - org-people-person-to-table shows all the data about one individual as an `org-mode' table.
 ;;       Added test-cases in new file, org-people-test.el
@@ -43,45 +46,19 @@
 
 
 ;;
-;; Configuration / Storage
+;; Configuration
 ;;
 
-(defvar org-people--cache nil
-  "Cached result of parsing the contact list.
-This is used by `org-people' to avoid unnecessary parsing.")
+(defvar org-people-search-tag "contact"
+  "Filter for finding org-entries to process.")
 
+(defvar org-people-search-type 'agenda
+  "Filter for finding org-entries to process.")
 
-(defvar org-people--cache-mtime nil
-  "Modification time of the cached contacts file.
-This is used by `org-people' to avoid unnecessary parsing.")
-
-
-(defgroup org-people nil
-  "Contact list helpers, using org-mode file as a backing store."
-  :group 'org)
-
-
-(defcustom org-people-file
-  (expand-file-name "~/Org/PEOPLE.org")
-  "The path to the org file containing contact details.
-While the format isn't defined specifically it is assumed properties are used for storing data, and
-we only process level-two headings beneath the header named by `org-people-headline'."
-  :type 'file
-  :group 'org-people)
-
-
-(defcustom org-people-headline
-  "People"
-  "The name of the header beneath which contacts are parsed by `org-people'."
-  :type 'string
-  :group 'org-people)
-
-
-(defcustom org-people-summary-buffer-name
+(defvar org-people-summary-buffer-name
   "*Contacts*"
-  "The name of the buffer to create/use with `org-people-summary'."
-  :type 'string
-  :group 'org-people)
+  "The name of the buffer to create/use with `org-people-summary'.")
+
 
 
 
@@ -91,57 +68,34 @@ we only process level-two headings beneath the header named by `org-people-headl
 ;;
 
 (defun org-people-parse ()
-  "Return hash table of NAME -> PLIST from the file specified in `org-people-file'.
+  "Return hash table of NAME -> PLIST from all agenda-files.
 
-We only include data from level-2 headlines beneath the header named by `org-people-headline'.
+We only include data from headlines which have a tag matching `org-people-search-tag',
+and at least one property.
 
-If TAGS is non-nil (list of strings) then only entries with at least one matching tag are included.
-
-Because this is the core of our package and parsing could be slow we cache data inside
-the variable `org-people--cache' and record the mtime of the source file inside
-`org-people--cache-mtime' to rebuild the cache when the source file changes."
-  (unless (file-readable-p org-people-file)
-    (user-error "org-people-file not readable: %s" org-people-file))
-  (let ((file-mtime (nth 5 (file-attributes org-people-file))))
-    (when (and org-people--cache
-               (equal org-people--cache-mtime file-mtime))
-      org-people--cache)
-    ;; Otherwise parse afresh
-    (let ((table (make-hash-table :test #'equal)))
-      (with-current-buffer (find-file-noselect org-people-file)
-        (org-with-wide-buffer
-         (goto-char (point-min))
-         ;; Find the '* People' heading
-         (when (re-search-forward
-                (format org-complex-heading-regexp-format
-                        (regexp-quote org-people-headline))
-                nil t)
-           (let ((root-level (org-outline-level))
-                 (subtree-end (save-excursion (org-end-of-subtree t))))
-             (forward-line)
-             ;; Walk all level-2 children
-             (while (and (< (point) subtree-end)
-                         (re-search-forward org-heading-regexp subtree-end t))
-               (when (= (org-outline-level) (1+ root-level))
-                 (let ((name (nth 4 (org-heading-components)))
-                       (plist nil)
-                       (entry-tags (org-get-tags)))
-                   ;; Get any associated properties
-                   (dolist (prop (org-entry-properties nil 'standard))
-                     (let ((key (intern (concat ":" (car prop))))
-                           (val (cdr prop)))
-                       (setq plist (plist-put plist key val))))
-                   (when plist
-                     (setq plist (plist-put plist :NAME name))
-                     (setq plist (plist-put plist :TAGS entry-tags))
-                     (puthash name plist table)))))))))
-      ;; Cache results
-      (setq org-people--cache table)
-      (setq org-people--cache-mtime file-mtime)
-      table)))
-
-
-
+It is assumed the org-mode caching and parsing layer is fast enough that there won't be
+undue performance problems regardless of the number of contacts you have."
+  (let ((table (make-hash-table :test #'equal)))
+    (org-map-entries
+         (lambda ()
+           (let ((name (nth 4 (org-heading-components)))
+                 (plist nil)
+                 ; remove "contacts" from the tag-list
+                 (entry-tags (remove org-people-search-tag (org-get-tags))))
+             ;; Get any associated properties
+             (dolist (prop (org-entry-properties nil 'standard))
+               (let ((key (intern (concat ":" (car prop))))
+                     (val (cdr prop)))
+                 (setq plist (plist-put plist key val))))
+             ;; Save the details if we have more than one property present.
+             (when (and plist (> (/ (length plist) 2) 1))
+               (setq plist (plist-put plist :NAME name))
+               (setq plist (plist-put plist :TAGS entry-tags))
+               (puthash name plist table))
+             table))
+         (concat "+" org-people-search-tag)
+         org-people-search-type)
+    table))
 
 
 ;;
@@ -150,15 +104,15 @@ the variable `org-people--cache' and record the mtime of the source file inside
 ;;
 
 (defun org-people-names ()
-  "Return all known contact names found inside the file `org-people-file'.
+  "Return all known contact names.
 
-This uses `org-people-parse' to get the list of known contacts, with a cache
-to avoid re-parsing unnecessarily."
+This uses `org-people-parse' to get the list of parsed/discovered contacts."
   (sort (hash-table-keys (org-people-parse)) #'string<))
 
 
+
 (defun org-people--completion-annotation (name)
-  "Return an annotation string for contact NAME."
+  "Return a annotation-string for contact completion."
   (let* ((plist (org-people-get-by-name name))
          (email (plist-get plist :EMAIL))
          (phone (plist-get plist :PHONE)))
@@ -167,6 +121,7 @@ to avoid re-parsing unnecessarily."
        (format "  [%s]" email))
      (when phone
        (format "  ☎ %s" phone)))))
+
 
 
 (defun org-people--completion-table (string pred action)
@@ -180,6 +135,7 @@ to avoid re-parsing unnecessarily."
                           string pred)))
 
 
+
 (defun org-people-select-interactively ()
   "Use `completing-read' to select a single contact name, with annotations.
 
@@ -190,11 +146,13 @@ All known contacts are presented, as determined by `org-people-names'."
    nil t))
 
 
+
 (defun org-people-get-by-name (name)
   "Return plist for NAME from the contact-file.
 
 This is basically the way of getting all data known about a given person."
   (gethash name (org-people-parse)))
+
 
 
 (defun org-people-filter (pred-p)
@@ -222,6 +180,7 @@ regexp is used instead."
                                  t)
                            (if (string-equal value (or found ""))
                              t))))))
+
 
 
 (defun org-people-person-to-table(name)
@@ -289,6 +248,7 @@ default to '(:NAME :PHONE :EMAIL)."
     (nreverse result)))
 
 
+
 (defun org-people-insert ()
   "Insert a specific piece of data from a contact.
 
@@ -306,6 +266,7 @@ which should be inserted."
                             (mapcar #'symbol-name keys)
                             nil t))))
       (insert (or (plist-get values choice) "")))))
+
 
 
 (defun org-people-browse-name (&optional name)
@@ -358,6 +319,7 @@ This is used by our [[people:xxx]] handler."
    collect plist))
 
 
+
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
 
@@ -377,6 +339,7 @@ This is used by our [[people:xxx]] handler."
   (tabulated-list-init-header))
 
 
+
 (defun org-people-summary--entry (plist)
   "Convert PLIST to a `tabulated-list-mode' entry."
   (let* ((name  (or (plist-get plist :NAME) ""))
@@ -388,11 +351,13 @@ This is used by our [[people:xxx]] handler."
     (list name (vector name email phone tags))))
 
 
+
 (defun org-people-summary--refresh ()
   "Populate `tabulated-list-entries'."
   (setq tabulated-list-entries
         (mapcar #'org-people-summary--entry
                 (org-people--list))))
+
 
 
 (defun org-people-summary--open ()
@@ -403,6 +368,7 @@ This is used by our [[people:xxx]] handler."
     (unless plist
       (user-error "No contact found: %s" name))
     (org-people-browse-name name)))
+
 
 
 (defun org-people--export-person-link (path desc backend)
@@ -416,6 +382,7 @@ We just make the name bold."
       (format "<strong>%s</strong>" name))
      (t
       name))))
+
 
 
 (defun org-people-summary--copy-field ()
@@ -440,6 +407,7 @@ We just make the name bold."
           (kill-new value)
           (message "Copied: %s" value))
       (message "Could not determine field under point"))))
+
 
 
 (defun org-people-summary--filter-by-property ()
@@ -469,6 +437,7 @@ We just make the name bold."
           (tabulated-list-print t))))))
 
 
+
 (defun org-people-summary ()
   "Display contacts using `tabulated-list-mode'.
 
@@ -485,10 +454,12 @@ Filtering can be applied (using a regexp) by pressing 'f'."
     (pop-to-buffer buf)))
 
 
+
 ;; Open the contact details on RET, filter by `f'.
 (define-key org-people-summary-mode-map (kbd "RET") #'org-people-summary--open)
 (define-key org-people-summary-mode-map (kbd "c") #'org-people-summary--copy-field)
 (define-key org-people-summary-mode-map (kbd "f") #'org-people-summary--filter-by-property)
+
 
 
 ;;

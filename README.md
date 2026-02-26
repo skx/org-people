@@ -1,24 +1,20 @@
 # org-people
 
-This package allows easy contact-management via org-mode.
+This package allows easy contact-management via the native org-mode facilities.
 
-The assumption is that you have a single file containing contact-details, stored in a tree:
-
-* The headline of the item is the contact-name.
-* The attributes of the people are stored as properties.
-
-Here is an example "contacts.org" file:
+Contacts are found from any of your org-agenda files, providing they have a tag of "contacts",
+for example here is an example "contacts.org" file which has some contacts beneath a "People" tree:
 
 ```
 * People
-  ** Alice                        :family:
+  ** Alice                        :family:contact:
   :PROPERTIES
   :ADDRESS: 32 Something Street
   :EMAIL: alice@example.com
   :PHONE: +123 456 789
   :CHILDREN: Mallory
   :END
- ** Bob                           :colleague:
+ ** Bob                           :colleague:contact:
   :PROPERTIES
   :ADDRESS: 32 Something Lane
   :EMAIL: bob@example.com
@@ -26,16 +22,13 @@ Here is an example "contacts.org" file:
   :END
 ```
 
-Here you see all contacts are stored beneath the "People" header, and we have two entries.
-
-We assume that you have "ADDRESS", "EMAIL", and "PHONE" properties.  There is no restriction
-upon the names of the properties, but these are the obvious basic values.
+It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other properties, however no properties are mandatory or expected.  You can add an arbitrary number of properties - providing at least one is present, the tag is in-place all will be well.  The headline will be used as the contact name.
 
 
 
 ## Adding Entries
 
-If you use `org-capture` you may use the following template to add a new entry:
+If you use `org-capture` you may use the following template to add a new entry like so:
 
 ```
 (setq org-capture-templates
@@ -67,11 +60,8 @@ Suggested usage:
 ; insert a contact "thing" at the current point.
 (global-set-key (kbd "C-c p") 'org-people-insert)
 
-; show a summary of contacts.
+; show a summary of contacts - allow jumping to the definition, copying and filtering, etc.
 (global-set-key (kbd "C-c P") 'org-people-summary)
-
-; or show the whole file.
-(global-set-key (kbd "C-c P") '(lambda() (interactive) (find-file org-people-file)))
 ```
 
 There are also functions for working with the parsed contacts:
@@ -90,12 +80,16 @@ There are also functions for working with the parsed contacts:
 
 ## Configuration
 
-There are two configuration items you might wish to change:
+No special configuration is required, although if you wish to use a different tag to identify the
+contacts you can specify that via `org-people-search-tag`.
 
-* `org-people-file`
-  * The name of the org-file to read entries from.
-* `org-people-headline`
-  * The headline beneath which contacts are stored.
+If you wished to limit parsing to only a single named file you could set `org-people-search-type` to be a list containing the name(s) of files to process, otherwise all agenda files will be read.
+
+
+
+## Limitations
+
+If you have two contacts with the same name one will overwrite the other.  This is annoying, but not a bug.
 
 
 
@@ -108,7 +102,7 @@ Inside org-mode files just create links using that protocols:
     * This is a headline
     [[org-people:Steve Kemp]] wrote this package.
 
-This will open `org-people-file` and jump to the entry for the person (me).
+This will jump to the definition of the named person (me).
 
 When exported to HTML the person name will be made bold, rather than becoming a link, which is probably what you want.
 

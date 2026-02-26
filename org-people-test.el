@@ -8,20 +8,20 @@
 ;; ----------------------------------------------------------------------
 (defconst org-people--mock-org
 "* People
-** Alice Smith  :friend:work:
+** Alice Smith  :friend:work:contact:
 :PROPERTIES:
 :EMAIL: alice@example.com
 :PHONE: 111-222-3333
 :END:
 Alice doesn't love [[org-people:Bob Jones]]
 
-** Bob Jones :family:
+** Bob Jones :family:contact:
 :PROPERTIES:
 :EMAIL: bob@example.com
 :PHONE: 444-555-6666
 :END:
 
-** Carol White :work:
+** Carol White :work:contact:
 :PROPERTIES:
 :EMAIL: carol@example.com
 :END:
@@ -35,7 +35,7 @@ Alice doesn't love [[org-people:Bob Jones]]
 
 (defmacro org-people--with-mocked-people (contents &rest body)
   "Run BODY with org-people reading from a fixed org file with CONTENTS."
-  `(let ((org-people-file org-people--test-file))
+  `(let ((org-people-search-type (list org-people--test-file)))
      ;; Clean up any previous buffer + file
      (when-let ((buf (get-file-buffer org-people--test-file)))
        (kill-buffer buf))
