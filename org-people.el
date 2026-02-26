@@ -41,10 +41,22 @@
 ;;
 
 
-(require 'org)
-(require 'seq)
+;;
+;; Requirements/Dependencies
+;;
 (require 'cl-lib)
+(require 'seq)
+(require 'org)
 
+
+;;
+;; Avoid byte-compile warnings for org functions
+;;
+(declare-function org-map-entries "org" (&rest args))
+(declare-function org-get-tags "org" (&optional pom inherit))
+(declare-function org-entry-properties "org" (&optional pom scope))
+(declare-function org-heading-components "org" (&optional pom))
+(declare-function org-complex-heading-regexp-format "org" ())
 
 ;;
 ;; Configuration
@@ -71,11 +83,12 @@
 (defun org-people-parse ()
   "Return hash table of NAME -> PLIST from all agenda-files.
 
-We only include data from headlines which have a tag matching `org-people-search-tag',
-and at least one property.
+We only include data from headlines which have a tag matching
+`org-people-search-tag', and at least one property.
 
-It is assumed the org-mode caching and parsing layer is fast enough that there won't be
-undue performance problems regardless of the number of contacts you have."
+It is assumed the org-mode caching and parsing layer is fast
+enough that there won't be undue performance problems regardless
+of the number of contacts you have."
   (let ((table (make-hash-table :test #'equal)))
     (org-map-entries
          (lambda ()
@@ -118,11 +131,12 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
   (let* ((plist (org-people-get-by-name name))
          (email (plist-get plist :EMAIL))
          (phone (plist-get plist :PHONE)))
-    (concat
-     (when email
-       (format "  [%s]" email))
-     (when phone
-       (format "  ☎ %s" phone)))))
+    (string-join
+     (delq nil
+           (list (when email (format "[%s]" email))
+                 (when phone (format "☎ %s" phone))))
+     "  ")))
+
 
 
 
@@ -191,7 +205,7 @@ regexp is used instead."
 This function is designed to create an `org-mode' table, like so:
 
 #+NAME: myself
-#+BEGIN_SRC elisp :results value table :colnames '(\"Field\" \"Value\")
+#+BEGIN_SRC elisp :results value table :colnames \='(\"Field\" \"Value\")
 (org-people-person-to-table \"Steve Kemp\")
 #+END_SRC
 "
@@ -225,13 +239,14 @@ This function is designed to create an `org-mode' table, like so:
 
 #+NAME: family-contacts
 #+BEGIN_SRC elisp :results value table
-(org-people-tags-to-table \"family\" '(:NAME :PHONE))
+(org-people-tags-to-table \"family\" \='(:NAME :PHONE))
 #+END_SRC
 
 PROPS is a list of property symbols to include, is nil we
-default to '(:NAME :PHONE :EMAIL).
+default to (:NAME :PHONE :EMAIL).
 
-The special value :LINK: will expand to a clickable link, using the org-people: handler."
+The special value :LINK: will expand to a clickable link,
+using the org-people: handler."
   (let ((people (org-people-parse))
         (props (or props '(:LINK :PHONE :EMAIL)))
         (result))
@@ -255,6 +270,7 @@ The special value :LINK: will expand to a clickable link, using the org-people: 
 
 
 
+;;;###autoload
 (defun org-people-insert ()
   "Insert a specific piece of data from a contact.
 
@@ -422,12 +438,13 @@ We just make the name bold."
 
 
 
+;;;###autoload
 (defun org-people-summary ()
   "Display contacts using `tabulated-list-mode'.
 
-This allow sorting by each column, etc.
+This allows sorting by each column, etc.
 
-Filtering can be applied (using a regexp) by pressing 'f'."
+Filtering can be applied (using a regexp), and fields copied."
   (interactive)
 
   (let ((buf (get-buffer-create org-people-summary-buffer-name)))
