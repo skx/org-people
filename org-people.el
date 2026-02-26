@@ -223,6 +223,7 @@ This function is designed to create an `org-mode' table, like so:
                    (substring (symbol-name (car b)) 1)))))
          ;; Convert to rows
          (rows
+          (cl-remove-if #'(lambda (s) (null s))
           (mapcar
            (lambda (pair)
              (if (cadr pair)
@@ -230,7 +231,7 @@ This function is designed to create an `org-mode' table, like so:
               (capitalize
                (substring (symbol-name (car pair)) 1))
               (cadr pair))))
-           sorted)))
+           sorted))))
     rows))
 
 
