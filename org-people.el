@@ -210,8 +210,10 @@ This function is designed to create an `org-mode' table, like so:
 #+END_SRC
 "
   (let* ((plist (org-people-get-by-name name))
+         ;; delete ":MARKER" field to give an updated plist
+         (trimmed (plist-put plist :MARKER nil))
          ;; Convert plist to list of (key . value) pairs
-         (pairs (seq-partition plist 2))
+         (pairs (seq-partition trimmed 2))
          ;; Sort pairs alphabetically by key name (without leading :)
          (sorted
           (sort pairs
@@ -223,13 +225,13 @@ This function is designed to create an `org-mode' table, like so:
          (rows
           (mapcar
            (lambda (pair)
+             (if (cadr pair)
              (list
               (capitalize
                (substring (symbol-name (car pair)) 1))
-              (cadr pair)))
+              (cadr pair))))
            sorted)))
     rows))
-
 
 
 (defun org-people-tags-to-table (tag &optional props)
