@@ -1,3 +1,8 @@
+* Intro
+This is a sample document which contains some contacts.
+
+These contacts are used by the =org-people-test.el= package, which uses the =ert= facility to run test-cases.
+
 * People
 ** Alice Smith  :friend:work:contact:
 :PROPERTIES:
@@ -15,3 +20,13 @@ Alice doesn't love [[org-people:Bob Jones]]
 :PROPERTIES:
 :EMAIL: carol@example.com
 :END:
+** Steve Kemp
+:PROPERTIES:
+:COUNTRY:   Finland
+:BIRTHDAY:  <1976-03-10 Wed +1y>
+:EMAIL:     steve@steve.fi
+:END:
+
+This contact will be ignored as there is no "contact" tag applied to it.
+
+%%(org-anniversary 2025 2 27) This package is %d years old.
