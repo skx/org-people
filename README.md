@@ -23,15 +23,15 @@ for example here is an example "contacts.org" file which has some contacts benea
   :END
 ```
 
-It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other properties, however no properties are mandatory or expected.  You can add an arbitrary number of properties - providing at least one is present, the tag is in-place all will be well.  The headline will be used as the contact name.
+It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other properties, however no properties are mandatory or expected.  The contact will be added providing there is at least one property in-place, and the "contact" tag is present.  The headline itself is used as the contact name.
 
-The special `:NICKNAME:` property will be used for completion, alongside the person's name, if it is present.   But this is optional.
+The special `:NICKNAME:` property will be used for completion, alongside the person's name, if it is present, but this is optional.
 
 
 
 ## Adding Entries
 
-If you use `org-capture` you may use the following template to add a new entry like so:
+If you use `org-capture` you may use the following template to add a new entry:
 
 ```
 (setq org-capture-templates
@@ -48,7 +48,7 @@ If you use `org-capture` you may use the following template to add a new entry l
 These are the main user-focused functions within the package to work with contacts:
 
 * `org-people-insert`
-  * Insert contact-data into the buffer, via interactive prompts (with `completing-read`).
+  * Insert contact-data, via interactive prompts (with `completing-read`).
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a summary of their details.
   * This uses `tabulated-list-mode` and allows you to sort and copy fields, etc.
@@ -83,8 +83,7 @@ There are also functions for working with the parsed contacts:
 
 ## Configuration
 
-No special configuration is required, although if you wish to use a different tag to identify the
-contacts you can specify that via `org-people-search-tag`.
+No special configuration is required, although if you wish to use a different tag to identify the contacts you may specify that via `org-people-search-tag`.
 
 If you wished to limit parsing to only a single named file you could set `org-people-search-type` to be a list containing the name(s) of files to process, otherwise all agenda files will be read.
 
@@ -115,7 +114,8 @@ You can add such a link via C-c C-l, as per usual, with TAB-completion support
 
 ## Dynamic `org-mode` tables
 
-If you tag the entries within the people hierarchy you can then create org-mode tables of matching entries.
+If you tag the contact-entries you can use those tags to create org-mode tables of matching entries.
+
 For example the following can auto-update:
 
     #+NAME: get-family-contacts
@@ -123,14 +123,14 @@ For example the following can auto-update:
     (org-people-tags-to-table "family")
     #+END_SRC
 
-If you prefer different columns you can specify them:
+If you prefer different columns to be included within your generated table you can specify them directly:
 
     #+NAME: get-family-contacts
     #+BEGIN_SRC elisp :results value table
     (org-people-tags-to-table "family" '(:LINK :PHONE))
     #+END_SRC
 
-You can also include all data about a single named individual, by name:
+Rather than handling groups of contacts, via tags, you can also create a table including all data about a single named individual, by name:
 
     #+NAME: steve-kemp
     #+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
