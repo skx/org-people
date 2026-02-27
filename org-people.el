@@ -330,17 +330,23 @@ excluded from the completion."
          (ignored org-people-ignored-properties)
          (completion-ignore-case t)
          (completion-styles '(basic substring partial-completion)))
-    (unless values
-      (user-error "No properties defined for %s" person))
-    ;; Collect keys and remove ignored ones
-    (let* ((keys (cl-loop for (k v) on values by #'cddr
-                          unless (memq k ignored)
-                          collect k))
-           (choice (intern (completing-read
-                            "Attribute: "
-                            (mapcar #'symbol-name keys)
-                            nil t))))
-      (insert (or (plist-get values choice) "")))))
+    (if values
+        ;; Collect keys and remove ignored ones
+        (let* ((keys (cl-loop for (k v) on values by #'cddr
+                              unless (memq k ignored)
+                              collect k))
+               ;; prompt
+               (choice (intern (completing-read
+                                "Attribute: "
+                                (mapcar #'symbol-name keys)
+                                nil t))))
+          ;; insert
+          (insert (or (plist-get values choice) "")))
+      (if person
+          (user-error "No properties present for contact %s" person)
+        (user-error "No contact selected"))
+      )))
+
 
 
 
