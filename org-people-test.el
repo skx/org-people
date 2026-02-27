@@ -190,12 +190,13 @@
           (org-people-summary-mode)
           (org-people-summary--refresh)
           (setq tabulated-list-entries
-                (list (org-people-summary--entry
-                       (org-people-get-by-name "Alice Smith"))))
+                (mapcar #'org-people-summary--entry
+                        (org-people--all-plists)))
           (tabulated-list-print)
           (goto-char (point-min))
+          (forward-line)
           (org-people-summary--open)
-          (should (equal opened "Alice Smith")))))))
+          (should (equal opened "Bob Jones")))))))
 
 
 ;; ----------------------------------------------------------------------
@@ -210,8 +211,8 @@
         (with-temp-buffer
           (org-people-summary-mode)
           (setq tabulated-list-entries
-                (list (org-people-summary--entry
-                       (org-people-get-by-name "Alice Smith"))))
+                (mapcar #'org-people-summary--entry
+                        (org-people--all-plists)))
           (tabulated-list-print)
           (goto-char (point-min))
           ;; Move into Email column (approximate)
