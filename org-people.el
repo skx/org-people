@@ -10,6 +10,8 @@
 ;;
 ;; Version History (brief)
 ;;
+;; 1.1 - Special support for nickname, and case insensitivity by default for completion.
+;;
 ;; 1.0 - Process all agenda-files by default, via a tag search for ":contact:" (by default).
 ;;       This is more generally useful, and removes configuration and our ad-hoc caching implementation.
 ;;
@@ -130,36 +132,62 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
   "Return a annotation-string for contact completion."
   (let* ((plist (org-people-get-by-name name))
          (email (plist-get plist :EMAIL))
-         (phone (plist-get plist :PHONE)))
+         (phone (plist-get plist :PHONE))
+         (alias-table (org-people--alias-table))
+         (canonical (gethash name alias-table)))
     (string-join
      (delq nil
-           (list (when email (format "[%s]" email))
-                 (when phone (format "☎ %s" phone))))
+           (list (when email (format " [%s]" email))
+                 (when phone (format " ☎ %s" phone))
+                 (when (not (string= name canonical))
+                   (format " (%s)" canonical))))
      "  ")))
 
 
+(defun org-people--alias-table ()
+  "Return a hash of completion-string -> canonical-name."
+  (let ((alias-table (make-hash-table :test #'equal))
+        (people (org-people-parse)))
+    (maphash
+     (lambda (name plist)
+       ;; Always allow completion on canonical name
+       (puthash name name alias-table)
+
+       ;; Support single nickname
+       (when-let ((nick (plist-get plist :NICKNAME)))
+         (puthash nick name alias-table))
+
+       ;; Optional: support multiple aliases separated by ;
+       (when-let ((aliases (plist-get plist :ALIASES)))
+         (dolist (alias (split-string aliases ";" t "[[:space:]]*"))
+           (puthash alias name alias-table))))
+     people)
+    alias-table))
 
 
 (defun org-people--completion-table (string pred action)
-  "Return a completion-table for contact completion."
-  (if (eq action 'metadata)
-      '(metadata
-        (annotation-function . org-people--completion-annotation)
-        (category . org-people))
-    (complete-with-action action
-                          (org-people-names)
-                          string pred)))
-
+  "Return a completion-table for contact completion, including nicknames."
+  (let* ((alias-table (org-people--alias-table))
+         (candidates (hash-table-keys alias-table)))
+    (if (eq action 'metadata)
+        '(metadata
+          (annotation-function . org-people--completion-annotation)
+          (category . org-people))
+      (complete-with-action action candidates string pred))))
 
 
 (defun org-people-select-interactively ()
-  "Use `completing-read' to select a single contact name, with annotations.
-
-All known contacts are presented, as determined by `org-people-names'."
-  (completing-read
-   "Contact name: "
-   #'org-people--completion-table
-   nil t))
+  "Select a contact by name or nickname."
+  (let* ((alias-table (org-people--alias-table))
+         (completion-ignore-case t)
+         (completion
+          (completing-read
+           "Contact name: "
+           (lambda (string pred action)
+             (org-people--completion-table string pred action))
+           nil t)))
+    ;; Return canonical name
+    (gethash completion alias-table)))
 
 
 

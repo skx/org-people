@@ -13,6 +13,7 @@ for example here is an example "contacts.org" file which has some contacts benea
   :EMAIL: alice@example.com
   :PHONE: +123 456 789
   :CHILDREN: Mallory
+  :NICKNAME: Allu
   :END
  ** Bob                           :colleague:contact:
   :PROPERTIES
@@ -23,6 +24,8 @@ for example here is an example "contacts.org" file which has some contacts benea
 ```
 
 It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other properties, however no properties are mandatory or expected.  You can add an arbitrary number of properties - providing at least one is present, the tag is in-place all will be well.  The headline will be used as the contact name.
+
+The special `:NICKNAME:` property will be used for completion, alongside the person's name, if it is present.   But this is optional.
 
 
 
