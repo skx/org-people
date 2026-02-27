@@ -164,6 +164,62 @@
                      "Alice Smith")))))
 
 
+;; ----------------------------------------------------------------------
+;; Test that summary-data has the correct data
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-summary-entry-test ()
+  "Test conversion of plist to tabulated-list entry."
+  (org-people--with-mocked-people
+    (let* ((plist (org-people-get-by-name "Alice Smith"))
+           (entry (org-people-summary--entry plist)))
+      (should (equal (car entry) "Alice Smith"))
+      (should (vectorp (cadr entry)))
+      (should (equal (aref (cadr entry) 1) "alice@example.com")))))
+
+
+;; ----------------------------------------------------------------------
+;; Test that "opening" a summary-view does the right thing.
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-summary-open-test ()
+  "Test RET opens correct contact."
+  (org-people--with-mocked-people
+    (let ((opened nil))
+      (cl-letf (((symbol-function 'org-people-browse-name)
+                 (lambda (name) (setq opened name))))
+        (with-temp-buffer
+          (org-people-summary-mode)
+          (org-people-summary--refresh)
+          (setq tabulated-list-entries
+                (list (org-people-summary--entry
+                       (org-people-get-by-name "Alice Smith"))))
+          (tabulated-list-print)
+          (goto-char (point-min))
+          (org-people-summary--open)
+          (should (equal opened "Alice Smith")))))))
+
+
+;; ----------------------------------------------------------------------
+;; Test that copying a summary-view entry does the right thing.
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-summary-copy-field-test ()
+  "Test copying field under point."
+  (org-people--with-mocked-people
+    (let ((copied nil))
+      (cl-letf (((symbol-function 'kill-new)
+                 (lambda (value) (setq copied value))))
+        (with-temp-buffer
+          (org-people-summary-mode)
+          (setq tabulated-list-entries
+                (list (org-people-summary--entry
+                       (org-people-get-by-name "Alice Smith"))))
+          (tabulated-list-print)
+          (goto-char (point-min))
+          ;; Move into Email column (approximate)
+          (forward-char 35)
+          (org-people-summary--copy-field)
+          (should (equal copied "alice@example.com")))))))
+
+
 ;;;
 ;; Run the test cases
 ;;;
