@@ -1,0 +1,16 @@
+* People
+** Alice Smith  :friend:work:contact:
+:PROPERTIES:
+:EMAIL: alice@example.com
+:PHONE: 111-222-3333
+:END:
+Alice doesn't love [[org-people:Bob Jones]]
+** Bob Jones :family:contact:
+:PROPERTIES:
+:EMAIL: bob@example.com
+:PHONE: 444-555-6666
+:END:
+** Carol White :work:contact:
+:PROPERTIES:
+:EMAIL: carol@example.com
+:END:
