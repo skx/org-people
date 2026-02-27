@@ -11,6 +11,8 @@
 ;; Version History (brief)
 ;;
 ;; 1.1 - Special support for nickname, and case insensitivity by default for completion.
+;;       org-people-ignored-properties was introduced to ignore specific properties from
+;;       completion and table-generation.
 ;;
 ;; 1.0 - Process all agenda-files by default, via a tag search for ":contact:" (by default).
 ;;       This is more generally useful, and removes configuration and our ad-hoc caching implementation.
@@ -73,6 +75,10 @@
 (defvar org-people-summary-buffer-name
   "*Contacts*"
   "The name of the buffer to create/use with `org-people-summary'.")
+
+(defvar org-people-ignored-properties
+  (list :MARKER)
+  "Properties to ignore when inserting a person into a table, or in completion.")
 
 
 
@@ -237,15 +243,21 @@ This function is designed to create an `org-mode' table, like so:
 #+BEGIN_SRC elisp :results value table :colnames \='(\"Field\" \"Value\")
 (org-people-person-to-table \"Steve Kemp\")
 #+END_SRC
-"
+
+Properties included in `org-people-ignored-properties' are excluded from
+the generated table"
   (let* ((plist (org-people-get-by-name name))
-         ;; delete ":MARKER" field to give an updated plist
-         (trimmed (plist-put plist :MARKER nil))
          ;; Convert plist to list of (key . value) pairs
-         (pairs (seq-partition trimmed 2))
+         (pairs (seq-partition plist 2))
+
+         ;; Remove ignored keys - :MARKER, etc.
+         (filtered (seq-remove (lambda (pair)
+                                 (memq (car pair) org-people-ignored-properties))
+                               pairs))
+
          ;; Sort pairs alphabetically by key name (without leading :)
          (sorted
-          (sort pairs
+          (sort filtered
                 (lambda (a b)
                   (string<
                    (substring (symbol-name (car a)) 1)
@@ -306,17 +318,24 @@ using the org-people: handler."
 (defun org-people-insert ()
   "Insert a specific piece of data from a contact.
 
-This uses `org-people-select-interactively' to first prompt the user for contact
-name, and then a second interactive selection of the specific attribute value
-which should be inserted."
+This uses `org-people-select-interactively' to first prompt the user
+for a contact, and then a second interactive selection of the specific
+attribute value which should be inserted.
+
+Properties which are included in `org-people-ignored-properties' are
+excluded from the completion."
   (interactive)
   (let* ((person (org-people-select-interactively))
          (values (org-people-get-by-name person))
+         (ignored org-people-ignored-properties)
          (completion-ignore-case t)
          (completion-styles '(basic substring partial-completion)))
     (unless values
       (user-error "No properties defined for %s" person))
-    (let* ((keys (cl-loop for (k v) on values by #'cddr collect k))
+    ;; Collect keys and remove ignored ones
+    (let* ((keys (cl-loop for (k v) on values by #'cddr
+                          unless (memq k ignored)
+                          collect k))
            (choice (intern (completing-read
                             "Attribute: "
                             (mapcar #'symbol-name keys)
