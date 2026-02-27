@@ -311,7 +311,9 @@ name, and then a second interactive selection of the specific attribute value
 which should be inserted."
   (interactive)
   (let* ((person (org-people-select-interactively))
-         (values (org-people-get-by-name person)))
+         (values (org-people-get-by-name person))
+         (completion-ignore-case t)
+         (completion-styles '(basic substring partial-completion)))
     (unless values
       (user-error "No properties defined for %s" person))
     (let* ((keys (cl-loop for (k v) on values by #'cddr collect k))
@@ -445,7 +447,9 @@ We just make the name bold."
 (defun org-people-summary--filter-by-property ()
   "Filter contacts interactively by a property value."
   (interactive)
-  (let* ((prop-str (completing-read
+  (let* ((completion-ignore-case t)
+         (completion-styles '(basic substring partial-completion))
+         (prop-str (completing-read
                     "Property (e.g., :EMAIL, :PHONE, :TAGS): "
                     '(":NAME" ":EMAIL" ":PHONE" ":TAGS")
                     nil t))
