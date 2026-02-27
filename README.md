@@ -2,8 +2,10 @@
 
 This package allows easy contact-management via the native org-mode facilities.
 
-Contacts are found from any of your org-agenda files, providing they have a tag of "contacts",
-for example you can see the following simple hierarchy below, or look at [org-people-test.org](org-people-test.org) file which is used by the test-cases:
+Contacts are found from any of your org-agenda files, providing they have a tag
+of "contacts", for example you can see the following simple hierarchy below, or
+look at `org-people-test.org` file within this repository which is used by the
+test-cases:
 
 ```
 * People
