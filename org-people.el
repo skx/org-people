@@ -180,6 +180,7 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
   "Select a contact by name or nickname."
   (let* ((alias-table (org-people--alias-table))
          (completion-ignore-case t)
+         (completion-styles '(basic substring partial-completion))
          (completion
           (completing-read
            "Contact name: "
