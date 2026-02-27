@@ -53,7 +53,11 @@ These are the main user-focused functions within the package to work with contac
   * Insert contact-data, via interactive prompts (with `completing-read`).
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a summary of their details.
-  * This uses `tabulated-list-mode` and allows you to sort and copy fields, etc.
+  * This uses `tabulated-list-mode` and allows you run a few different actions
+    * Sort by the available fields.
+    * Copy fields to the clipboard.
+    * Export single contacts to VCF format.
+    * Filter the view by property values.
 * `org-people-tags-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
 * `org-people-person-to-table`

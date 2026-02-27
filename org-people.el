@@ -313,6 +313,52 @@ using the org-people: handler."
     (nreverse result)))
 
 
+(defun org-people-export-to-vcard (contact)
+  "Pop up a new buffer containing CONTACT (a plist) formatted as a vCard 3.0."
+  (interactive)
+  (let* ((name    (plist-get contact :NAME))
+         (email   (plist-get contact :EMAIL))
+         (phone   (plist-get contact :PHONE))
+         (address (plist-get contact :ADDRESS))
+         (buf     (generate-new-buffer "*vCard Export*")))
+
+    (with-current-buffer buf
+      (insert "BEGIN:VCARD\n")
+      (insert "VERSION:3.0\n")
+
+      ;; Full name
+      (when name
+        (insert (format "FN:%s\n" name))
+        ;; Structured name (basic split: last word = surname)
+        (let* ((parts (split-string name " "))
+               (first (string-join (butlast parts) " "))
+               (last  (car (last parts))))
+          (insert (format "N:%s;%s;;;\n" (or last "") (or first "")))))
+
+      ;; Email
+      (when email
+        (insert (format "EMAIL;TYPE=INTERNET:%s\n" email)))
+
+      ;; Phone
+      (when phone
+        (insert (format "TEL;TYPE=CELL:%s\n" phone)))
+
+      ;; Single-line address
+      ;; vCard ADR format is:
+      ;; ADR;TYPE=HOME:POBOX;EXT;STREET;CITY;REGION;POSTCODE;COUNTRY
+      ;; We'll put everything into STREET only.
+      (when address
+        (insert (format "ADR;TYPE=HOME:;;%s;;;;\n" address)))
+
+      (insert "END:VCARD\n")
+      (goto-char (point-min))
+
+      ;; Enable vcard-mode if available
+      (when (fboundp 'vcard-mode)
+        (vcard-mode)))
+
+    (pop-to-buffer buf)))
+
 
 ;;;###autoload
 (defun org-people-insert ()
@@ -429,6 +475,16 @@ This is used by our [[people:xxx]] handler."
     (org-people-browse-name name)))
 
 
+(defun org-people-summary--vcard ()
+  "Create a vcard contact for the contact at point."
+  (interactive)
+  (let* ((name (tabulated-list-get-id))
+         (plist (org-people-get-by-name name)))
+    (if plist
+        (org-people-export-to-vcard plist)
+      (user-error "No contact found: %s" name))))
+
+
 
 (defun org-people--export-person-link (path desc backend)
   "Export a person link for BACKEND.
@@ -521,6 +577,7 @@ Filtering can be applied (using a regexp), and fields copied."
 (define-key org-people-summary-mode-map (kbd "RET") #'org-people-summary--open)
 (define-key org-people-summary-mode-map (kbd "c") #'org-people-summary--copy-field)
 (define-key org-people-summary-mode-map (kbd "f") #'org-people-summary--filter-by-property)
+(define-key org-people-summary-mode-map (kbd "v") #'org-people-summary--vcard)
 
 
 
