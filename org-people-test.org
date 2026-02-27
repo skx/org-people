@@ -1,8 +1,9 @@
 * People
 ** Alice Smith  :friend:work:contact:
 :PROPERTIES:
-:EMAIL: alice@example.com
-:PHONE: 111-222-3333
+:EMAIL:    alice@example.com
+:PHONE:    111-222-3333
+:NICKNAME: Ally
 :END:
 Alice doesn't love [[org-people:Bob Jones]]
 ** Bob Jones :family:contact:

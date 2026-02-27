@@ -102,6 +102,67 @@
     )))
 
 
+;; ----------------------------------------------------------------------
+;; Test that lookup by :NICKNAME property works
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-alias-table-test ()
+  "Test alias table includes canonical names, nickname and aliases."
+  (org-people--with-mocked-people
+    (let* ((table (org-people--alias-table))
+           (alice (gethash "Alice Smith" table))
+           (nick  (gethash "Ally" table)))      ;; assume Alice has :NICKNAME Ally
+      (should (equal alice "Alice Smith"))
+      (should (equal nick "Alice Smith")))))
+
+
+;; ----------------------------------------------------------------------
+;; Test that completion of contacts works.
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-completion-table-test ()
+  "Test completion table resolves names and returns metadata."
+  (org-people--with-mocked-people
+    ;; Metadata request
+    (let ((meta (org-people--completion-table "" nil 'metadata)))
+      (should (eq (car meta) 'metadata))
+      (should (assq 'annotation-function (cdr meta))))
+
+    ;; Actual completion
+    (let ((result (org-people--completion-table "Ali" nil t)))
+      (should (member "Alice Smith" result)))))
+
+
+;; ----------------------------------------------------------------------
+;; Test that annotation generation works for completion code.
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-completion-annotation-test ()
+  "Test annotation string contains email and phone."
+  (org-people--with-mocked-people
+    (let ((annotation (org-people--completion-annotation "Alice Smith")))
+      (should (string-match "alice@example.com" annotation))
+      (should (string-match "111-222-3333" annotation)))))
+
+
+;; ----------------------------------------------------------------------
+;; Test that annotation generation works for Alias-people too
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-completion-annotation-alias-test ()
+  "Test annotation shows canonical name when completing alias."
+  (org-people--with-mocked-people
+    (let ((annotation (org-people--completion-annotation "Ally")))
+      (should (string-match "(Alice Smith)" annotation)))))
+
+
+;; ----------------------------------------------------------------------
+;; Test that completion works for Alias-people too
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-select-interactively-test ()
+  "Test interactive selection returns canonical name."
+  (org-people--with-mocked-people
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (&rest _) "Ally")))  ;; user typed nickname
+      (should (equal (org-people-select-interactively)
+                     "Alice Smith")))))
+
 
 ;;;
 ;; Run the test cases
