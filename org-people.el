@@ -383,7 +383,7 @@ excluded from the completion."
          (completion-styles '(basic substring partial-completion)))
     (if values
         ;; Collect keys and remove ignored ones
-        (let* ((keys (cl-loop for (k v) on values by #'cddr
+        (let* ((keys (cl-loop for (k ) on values by #'cddr
                               unless (memq k ignored)
                               collect k))
                ;; prompt
@@ -397,6 +397,7 @@ excluded from the completion."
           (user-error "No properties present for contact %s" person)
         (user-error "No contact selected"))
       )))
+
 
 
 
@@ -597,7 +598,8 @@ Filtering can be applied (using a regexp), and fields copied."
 
 
 (defun org-people-add-descriptions ()
-  "Rewrite all [[org-people:XXX]] links in the current buffer to [[org-people:XXX][XXX]].
+  "Rewrite all [[org-people:XXX]] links in the current buffer to add
+a description (i.e. [[org-people:XXX][XXX]]).
 
 Only adds descriptions if they are missing."
   (interactive)
@@ -605,9 +607,7 @@ Only adds descriptions if they are missing."
     (goto-char (point-min))
     ;; Search for org-people links
     (while (re-search-forward "\\[\\[org-people:\\([^]]+\\)\\]\\]" nil t)
-      (let ((target (match-string 1))
-            (start (match-beginning 0))
-            (end (match-end 0)))
+      (let ((target (match-string 1)))
         ;; Replace with [[org-people:XXX][XXX]]
         (replace-match (format "[[org-people:%s][%s]]" target target) t t)))))
 
