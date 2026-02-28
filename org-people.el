@@ -585,7 +585,6 @@ Filtering can be applied (using a regexp), and fields copied."
 (define-key org-people-summary-mode-map (kbd "v") #'org-people-summary--vcard)
 
 
-
 ;;
 ;; Define a handler for a link of the form "org-person:XXX"
 ;;
@@ -595,6 +594,22 @@ Filtering can be applied (using a regexp), and fields copied."
  :export   #'org-people--export-person-link
  :follow   #'org-people-browse-name
  :help-echo "Open the contacts-file at the position of the named person, via org-people")
+
+
+(defun org-people-add-descriptions ()
+  "Rewrite all [[org-people:XXX]] links in the current buffer to [[org-people:XXX][XXX]].
+
+Only adds descriptions if they are missing."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    ;; Search for org-people links
+    (while (re-search-forward "\\[\\[org-people:\\([^]]+\\)\\]\\]" nil t)
+      (let ((target (match-string 1))
+            (start (match-beginning 0))
+            (end (match-end 0)))
+        ;; Replace with [[org-people:XXX][XXX]]
+        (replace-match (format "[[org-people:%s][%s]]" target target) t t)))))
 
 
 ;; package time is over now.
