@@ -163,6 +163,42 @@ of the number of contacts you have."
          org-people-search-type)
     table))
 
+;;;###autoload
+(defun org-people-insert ()
+  "Insert a specific piece of data from a contact.
+
+This uses `org-people-select-interactively' to first prompt the user
+for a contact, and then a second interactive selection of the specific
+attribute value which should be inserted.
+
+Properties which are included in `org-people-ignored-properties' are
+excluded from the completion."
+  (interactive)
+  (let* ((person (org-people-select-interactively))
+         (values (org-people-get-by-name person))
+         (ignored org-people-ignored-properties)
+         (completion-ignore-case t)
+         (completion-styles '(basic substring partial-completion)))
+    (if values
+        ;; Collect keys and remove ignored ones
+        (let* ((keys (cl-loop for (k ) on values by #'cddr
+                              unless (memq k ignored)
+                              collect k))
+               ;; prompt
+               (choice (intern (completing-read
+                                "Attribute: "
+                                (mapcar #'symbol-name keys)
+                                nil t))))
+          ;; insert
+          (insert (or (plist-get values choice) "")))
+      (if person
+          (user-error "No properties present for contact %s" person)
+        (user-error "No contact selected"))
+      )))
+
+
+
+
 
 ;;
 ;; Filtering and searching functions that build upon the data-structure
@@ -175,8 +211,7 @@ of the number of contacts you have."
 This uses `org-people-parse' to get the list of parsed/discovered contacts."
   (sort (hash-table-keys (org-people-parse)) #'string<))
 
-
-(defun org-people--all-properties (table)
+(defun org-people--properties (table)
   "Return a sorted list of all distinct plist keys used in TABLE."
   (let (keys)
     (maphash
@@ -192,25 +227,11 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
             (string< (symbol-name a)
                      (symbol-name b))))))
 
-
-(defun org-people--completion-annotation (name)
-  "Return a annotation-string for contact completion."
-  (let* ((plist (org-people-get-by-name name))
-         (email (plist-get plist :EMAIL))
-         (phone (plist-get plist :PHONE))
-         (alias-table (org-people--alias-table))
-         (canonical (gethash name alias-table)))
-    (string-join
-     (delq nil
-           (list (when email (format " [%s]" email))
-                 (when phone (format " ☎ %s" phone))
-                 (when (not (string= name canonical))
-                   (format " (%s)" canonical))))
-     "  ")))
-
-
 (defun org-people--alias-table ()
-  "Return a hash of completion-string -> canonical-name."
+  "Return a hash of completion-string -> canonical-name.
+
+This is used to allow TAB-completion against :NICKNAME properties
+which might be associated with contacts."
   (let ((alias-table (make-hash-table :test #'equal))
         (people (org-people-parse)))
     (maphash
@@ -230,6 +251,28 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
     alias-table))
 
 
+
+
+
+;;
+;; Completion-related code
+;;
+
+(defun org-people--completion-annotation (name)
+  "Return a annotation-string for contact completion."
+  (let* ((plist (org-people-get-by-name name))
+         (email (plist-get plist :EMAIL))
+         (phone (plist-get plist :PHONE))
+         (alias-table (org-people--alias-table))
+         (canonical (gethash name alias-table)))
+    (string-join
+     (delq nil
+           (list (when email (format " [%s]" email))
+                 (when phone (format " ☎ %s" phone))
+                 (when (not (string= name canonical))
+                   (format " (%s)" canonical))))
+     "  ")))
+
 (defun org-people--completion-table (string pred action)
   "Return a completion-table for contact completion, including nicknames."
   (let* ((alias-table (org-people--alias-table))
@@ -239,7 +282,6 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
           (annotation-function . org-people--completion-annotation)
           (category . org-people))
       (complete-with-action action candidates string pred))))
-
 
 (defun org-people-select-interactively ()
   "Select a contact by name or nickname."
@@ -257,26 +299,16 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
 
 
 
+
+;;
+;; Selection code
+;;
+
 (defun org-people-get-by-name (name)
   "Return plist for NAME from the contact-file.
 
 This is basically the way of getting all data known about a given person."
   (gethash name (org-people-parse)))
-
-
-
-(defun org-people-filter (pred-p)
-  "Filter all known contacts by the given predicate.
-
-PRED-P should be a function which accepts the plist of properties associated
-with a given contact, and returns `t' if they should be kept.
-
-See `org-people-get-by-property' for an example use of this function."
-  (cl-loop
-   for plist being the hash-values of (org-people-parse)
-   when (funcall pred-p plist)
-   collect plist))
-
 
 (defun org-people-get-by-property (property value &optional regexp)
   "Return contacts by searching the contents of a specific property.
@@ -291,7 +323,24 @@ regexp is used instead."
                            (if (string-equal value (or found ""))
                              t))))))
 
+(defun org-people-filter (pred-p)
+  "Filter all known contacts by the given predicate.
 
+PRED-P should be a function which accepts the plist of properties associated
+with a given contact, and returns `t' if they should be kept.
+
+See `org-people-get-by-property' for an example use of this function."
+  (cl-loop
+   for plist being the hash-values of (org-people-parse)
+   when (funcall pred-p plist)
+   collect plist))
+
+
+
+
+;;
+;; Generate org-mode tables
+;;
 
 (defun org-people-person-to-table(name)
   "Return table-data about a named contact.
@@ -334,7 +383,6 @@ the generated table"
            sorted))))
     rows))
 
-
 (defun org-people-tags-to-table (tag &optional props)
   "Return a list of contacts filtered by TAG.
 
@@ -371,6 +419,13 @@ using the org-people: handler."
      people)
     (nreverse result)))
 
+
+
+
+
+;;
+;; summary-buffer code, and associated helpers
+;;
 
 (defun org-people-export-to-vcard (contact)
   "Pop up a new buffer containing CONTACT (a plist) formatted as a vCard 3.0."
@@ -421,44 +476,6 @@ using the org-people: handler."
 
     (pop-to-buffer buf)))
 
-
-;;;###autoload
-(defun org-people-insert ()
-  "Insert a specific piece of data from a contact.
-
-This uses `org-people-select-interactively' to first prompt the user
-for a contact, and then a second interactive selection of the specific
-attribute value which should be inserted.
-
-Properties which are included in `org-people-ignored-properties' are
-excluded from the completion."
-  (interactive)
-  (let* ((person (org-people-select-interactively))
-         (values (org-people-get-by-name person))
-         (ignored org-people-ignored-properties)
-         (completion-ignore-case t)
-         (completion-styles '(basic substring partial-completion)))
-    (if values
-        ;; Collect keys and remove ignored ones
-        (let* ((keys (cl-loop for (k ) on values by #'cddr
-                              unless (memq k ignored)
-                              collect k))
-               ;; prompt
-               (choice (intern (completing-read
-                                "Attribute: "
-                                (mapcar #'symbol-name keys)
-                                nil t))))
-          ;; insert
-          (insert (or (plist-get values choice) "")))
-      (if person
-          (user-error "No properties present for contact %s" person)
-        (user-error "No contact selected"))
-      )))
-
-
-
-
-
 (defun org-people-browse-name (&optional name)
   "Open the Org entry for NAME.
 
@@ -472,13 +489,6 @@ This is used by our [[people:xxx]] handler."
     (switch-to-buffer (marker-buffer marker))
     (goto-char marker)
     (org-reveal)))
-
-
-
-;;
-;; Summary-view of contacts.
-;;
-
 
 (defun org-people--all-plists ()
   "Return a list of all contact plists."
@@ -523,7 +533,6 @@ Supports `(:PROP WIDTH)` style for custom widths."
          t)))
     org-people-summary-properties)))
 
-
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
 
@@ -546,7 +555,6 @@ Supports `(:PROP WIDTH)` style for custom widths."
 
   (tabulated-list-init-header))
 
-
 (defun org-people-summary--entry (plist)
   "Convert PLIST to a `tabulated-list-mode' entry using `org-people-summary-properties'."
   (let* ((name  (or (plist-get plist :NAME) ""))
@@ -564,14 +572,11 @@ Supports `(:PROP WIDTH)` style for custom widths."
            org-people-summary-properties)))
     (list name (vconcat columns))))
 
-
 (defun org-people-summary--refresh ()
   "Populate `tabulated-list-entries'."
   (setq tabulated-list-entries
         (mapcar #'org-people-summary--entry
                 (org-people--all-plists))))
-
-
 
 (defun org-people-summary--open ()
   "Open the Org entry for the contact at point."
@@ -582,7 +587,6 @@ Supports `(:PROP WIDTH)` style for custom widths."
       (user-error "No contact found: %s" name))
     (org-people-browse-name name)))
 
-
 (defun org-people-summary--vcard ()
   "Create a vcard contact for the contact at point."
   (interactive)
@@ -591,8 +595,6 @@ Supports `(:PROP WIDTH)` style for custom widths."
     (if plist
         (org-people-export-to-vcard plist)
       (user-error "No contact found: %s" name))))
-
-
 
 (defun org-people--export-person-link (path desc backend)
   "Export a person link for BACKEND.
@@ -605,8 +607,6 @@ We just make the name bold."
       (format "<strong>%s</strong>" name))
      (t
       name))))
-
-
 
 (defun org-people-summary--copy-field ()
   "Copy the value of the field under point to the clipboard."
@@ -631,8 +631,6 @@ We just make the name bold."
           (message "Copied: %s" value))
       (message "Could not determine field under point"))))
 
-
-
 (defun org-people-summary--filter-by-property ()
   "Filter contacts interactively by a property value."
   (interactive)
@@ -640,7 +638,7 @@ We just make the name bold."
          (completion-styles '(basic substring partial-completion))
          (prop-str (completing-read
                     "Property to filter against: "
-                    (org-people--all-properties (org-people-parse))
+                    (org-people--properties (org-people-parse))
                     nil t))
          (prop (intern prop-str))
          (value (read-string (format "Value to match for %s: " prop-str))))
@@ -688,9 +686,12 @@ Filtering can be applied (using a regexp), and fields copied."
 (define-key org-people-summary-mode-map (kbd "v") #'org-people-summary--vcard)
 
 
+
+
 ;;
 ;; Define a handler for a link of the form "org-person:XXX"
 ;;
+
 (org-link-set-parameters
  "org-people"
  :complete #'org-people-select-interactively
@@ -699,6 +700,13 @@ Filtering can be applied (using a regexp), and fields copied."
  :help-echo "Open the contacts-file at the position of the named person, via org-people")
 
 
+
+
+;;
+;; Utility functions for users
+;;
+
+;;;###autoload
 (defun org-people-add-descriptions ()
   "Rewrite all [[org-people:XXX]] links in the current buffer to add
 a description (i.e. [[org-people:XXX][XXX]]).
@@ -714,5 +722,5 @@ Only adds descriptions if they are missing."
         (replace-match (format "[[org-people:%s][%s]]" target target) t t)))))
 
 
-;; package time is over now.
 (provide 'org-people)
+;;; org-people.el ends here
