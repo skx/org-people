@@ -3,7 +3,7 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 1.3
+;; Version: 1.4
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 
@@ -39,6 +39,9 @@
 ;; with helpful TAB-completion, and other API functions are available.
 
 ;;; Version history (brief)
+;;
+;; 1.4 - `org-people-summary' now allows you to specify the fields which are displayed,
+;;       via the new `org-people-summary-properties' configuration value.
 ;;
 ;; 1.3 - `org-people-summary' can now be filtered against all known properties.
 ;;       Not just the ones which are visible.  (i.e. Filter against ":ADDRESS")
@@ -107,6 +110,10 @@ for contacts.")
 (defvar org-people-summary-buffer-name
   "*Contacts*"
   "The name of the buffer to create when `org-people-summary' is invoked.")
+
+(defvar org-people-summary-properties
+  '(:NAME :EMAIL :PHONE :TAGS)
+  "List of properties to display in `org-people-summary'.")
 
 (defvar org-people-ignored-properties
   (list :MARKER)
@@ -477,18 +484,42 @@ This is used by our [[people:xxx]] handler."
    collect plist))
 
 
+(defun org-people-summary--column-width (prop)
+  "Return a sensible default width for PROP."
+  (pcase prop
+    (:NAME 30)
+    (:EMAIL 30)
+    (:PHONE 15)
+    (:TAGS  20)
+    (_ 20)))
+
+
+(defun org-people-summary--format ()
+  "Build `tabulated-list-format' from `org-people-summary-properties'."
+  (vconcat
+   (mapcar
+    (lambda (prop)
+      (list
+       (capitalize (substring (symbol-name prop) 1))
+       (org-people-summary--column-width prop)
+       t))
+    org-people-summary-properties)))
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
 
+
   (setq tabulated-list-format
-        [("Name" 30 t)
-         ("Email" 30 t)
-         ("Phone" 15 t)
-         ("Tags"  20 t)])
+        (org-people-summary--format))
 
   (setq tabulated-list-padding 2)
-  (setq tabulated-list-sort-key (cons "Name" nil))
+
+  ;; Default sort = first column
+  (setq tabulated-list-sort-key
+        (cons (capitalize
+               (substring
+                (symbol-name (car org-people-summary-properties)) 1))
+              nil))
 
   (add-hook 'tabulated-list-revert-hook
             #'org-people-summary--refresh
@@ -497,16 +528,23 @@ This is used by our [[people:xxx]] handler."
   (tabulated-list-init-header))
 
 
-
 (defun org-people-summary--entry (plist)
   "Convert PLIST to a `tabulated-list-mode' entry."
-  (let* ((name  (or (plist-get plist :NAME) ""))
-         (email (or (plist-get plist :EMAIL) ""))
-         (phone (or (plist-get plist :PHONE) ""))
-         (tags  (mapconcat #'identity
-                           (or (plist-get plist :TAGS) '())
-                           ",")))
-    (list name (vector name email phone tags))))
+  (let* ((name (or (plist-get plist :NAME) ""))
+         (columns
+          (mapcar
+           (lambda (prop)
+             (cond
+              ((eq prop :NAME)
+               name)
+              ((eq prop :TAGS)
+               (mapconcat #'identity
+                          (or (plist-get plist :TAGS) '())
+                          ","))
+              (t
+               (or (plist-get plist prop) ""))))
+           org-people-summary-properties)))
+    (list name (vconcat columns))))
 
 
 

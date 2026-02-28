@@ -156,6 +156,27 @@ Rather than handling groups of contacts, via tags, you can also create a table i
 
 
 
+## Summary View
+
+The `org-people-summary` function shows a table of all your known contacts.
+
+You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, which has the following defaults:
+
+    (defvar org-people-summary-properties
+       '(:NAME :EMAIL :PHONE :TAGS)
+       "List of properties to display in `org-people-summary'.")
+
+Some keybindings are setup:
+
+* `RET` goto the definition of the contact
+* `c` Copy the field under the point.
+* `f` Filter the view, by property.
+  * Even properties which are not visible can be used.
+  * e.g. ":ADDRESS" "Finland" will show only Finnish residents.
+* `v` - Export the contact.
+
+
+
 ## Testing
 
 You can run `make test` via the supplied [Makefile](Makefile) to run the tests in a batch-mode, otherwise load the file [org-people-test.el](org-people-test.el) and run `M-x eval buffer`, you should see the test results in a new buffer.
