@@ -112,7 +112,10 @@ for contacts.")
   "The name of the buffer to create when `org-people-summary' is invoked.")
 
 (defvar org-people-summary-properties
-  '(:NAME :EMAIL :PHONE :TAGS)
+  '(:NAME
+    (:EMAIL 35)
+    (:PHONE 14)
+    (:TAGS 10))
   "List of properties to display in `org-people-summary'.")
 
 (defvar org-people-ignored-properties
@@ -484,26 +487,42 @@ This is used by our [[people:xxx]] handler."
    collect plist))
 
 
-(defun org-people-summary--column-width (prop)
-  "Return a sensible default width for PROP."
-  (pcase prop
-    (:NAME 30)
-    (:EMAIL 30)
-    (:PHONE 15)
-    (:TAGS  20)
-    (_ 20)))
+(defun org-people-summary--column-width (col-spec)
+  "Return the width for COL-SPEC.
 
+COL-SPEC can be a symbol (:NAME) or a list (:PROP WIDTH).
+Defaults are used if WIDTH is not specified."
+  (cond
+   ;; (:PROP WIDTH) → use WIDTH
+   ((and (listp col-spec) (symbolp (car col-spec)) (numberp (cadr col-spec)))
+    (cadr col-spec))
+
+   ;; just a symbol → default width
+   ((symbolp col-spec)
+    (pcase col-spec
+      (:NAME 30)
+      (:EMAIL 30)
+      (:PHONE 15)
+      (:TAGS  20)
+      (_ 20)))  ; fallback for new properties
+
+   ;; fallback in case of weird input
+   (t 20)))
 
 (defun org-people-summary--format ()
-  "Build `tabulated-list-format' from `org-people-summary-properties'."
+  "Build `tabulated-list-format' from `org-people-summary-properties'.
+
+Supports `(:PROP WIDTH)` style for custom widths."
   (vconcat
    (mapcar
-    (lambda (prop)
-      (list
-       (capitalize (substring (symbol-name prop) 1))
-       (org-people-summary--column-width prop)
-       t))
+    (lambda (entry)
+      (let ((prop (if (listp entry) (car entry) entry)))
+        (list
+         (capitalize (substring (symbol-name prop) 1))
+         (org-people-summary--column-width entry)
+         t)))
     org-people-summary-properties)))
+
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
@@ -529,23 +548,21 @@ This is used by our [[people:xxx]] handler."
 
 
 (defun org-people-summary--entry (plist)
-  "Convert PLIST to a `tabulated-list-mode' entry."
-  (let* ((name (or (plist-get plist :NAME) ""))
+  "Convert PLIST to a `tabulated-list-mode' entry using `org-people-summary-properties'."
+  (let* ((name  (or (plist-get plist :NAME) ""))
          (columns
           (mapcar
-           (lambda (prop)
-             (cond
-              ((eq prop :NAME)
-               name)
-              ((eq prop :TAGS)
-               (mapconcat #'identity
-                          (or (plist-get plist :TAGS) '())
-                          ","))
-              (t
-               (or (plist-get plist prop) ""))))
+           (lambda (entry)
+             (let ((prop (if (listp entry) (car entry) entry)))
+               (cond
+                ((eq prop :NAME) name)
+                ((eq prop :TAGS)
+                 (mapconcat #'identity
+                            (or (plist-get plist :TAGS) '())
+                            ","))
+                (t (or (plist-get plist prop) "")))))
            org-people-summary-properties)))
     (list name (vconcat columns))))
-
 
 
 (defun org-people-summary--refresh ()
