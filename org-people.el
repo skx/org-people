@@ -3,12 +3,14 @@
 ;; org-people.el - A package for working with a contact-list in an org-mode file
 ;;
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 1.0
+;; Version: 1.2
 ;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 ;;
 ;; Version History (brief)
+;;
+;; 1.2 - Rudimentary (single-contact-only) VCF export.
 ;;
 ;; 1.1 - Special support for nickname, and case insensitivity by default for completion.
 ;;       org-people-ignored-properties was introduced to ignore specific properties from
@@ -317,10 +319,13 @@ using the org-people: handler."
   "Pop up a new buffer containing CONTACT (a plist) formatted as a vCard 3.0."
   (interactive)
   (let* ((name    (plist-get contact :NAME))
+         (safe-name (replace-regexp-in-string "[[:space:]]+" "_" name))
+         (filename (concat safe-name ".vcf"))
          (email   (plist-get contact :EMAIL))
          (phone   (plist-get contact :PHONE))
          (address (plist-get contact :ADDRESS))
-         (buf     (generate-new-buffer "*vCard Export*")))
+         (buf (find-file-noselect filename))
+         )
 
     (with-current-buffer buf
       (insert "BEGIN:VCARD\n")
