@@ -172,7 +172,9 @@ This uses `org-people-parse' to get the list of parsed/discovered contacts."
     (maphash
      (lambda (_name plist)
        (while plist
-         (push (car plist) keys)
+         (let ((key (car plist)))
+           (unless (memq key org-people-ignored-properties)
+             (push key keys)))
          (setq plist (cddr plist))))
      table)
     (sort (delete-dups keys)
