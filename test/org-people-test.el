@@ -221,6 +221,33 @@
           (should (equal copied "alice@example.com")))))))
 
 
+;; ----------------------------------------------------------------------
+;; Test that adding a custom column works
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-summary-custom-property-view ()
+  "Test org-people-summary can show custom properties."
+  (org-people--with-mocked-people
+   (let ((copied nil)
+         (org-people-summary-properties '(:NAME :NICKNAME)))
+     (cl-letf (((symbol-function 'kill-new)
+                (lambda (value) (setq copied value))))
+       (with-temp-buffer
+         (org-people-summary-mode)
+         (setq tabulated-list-entries
+               (mapcar #'org-people-summary--entry
+                       (org-people--all-plists)))
+         (tabulated-list-print)
+         (goto-char (point-min))
+         ;; Move into column (approximate)
+         (forward-char 35)
+         (org-people-summary--copy-field)
+         ;; we should have copied the nickname field
+         (should (equal copied "Ally"))
+         ;; and also the buffer itself should have the nickname
+         (should (string-match "Ally" (buffer-string)))
+         )))))
+
+
 ;;;
 ;; Run the test cases
 ;;;
