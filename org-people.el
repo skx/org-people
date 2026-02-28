@@ -1,14 +1,47 @@
 ;;; -*- lexical-binding: t; -*-
-;;
+
 ;; org-people.el - A package for working with a contact-list in an org-mode file
-;;
+
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 1.2
-;; Package-Requires: ((emacs "28.0") (org "9.0"))
+;; Version: 1.3
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
+
+;; Package-Requires: ((emacs "28.0") (org "9.0"))
+
+;; This file is not part of GNU Emacs.
+
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;; A package to collect contacts from org-agenda files, and allow
+;; operations to be carried out on them.
 ;;
-;; Version History (brief)
+;; By default all tree-items with a "contact" tag, which contain
+;; properties, are considered contacts.
+;;
+;; Once loaded `org-people-summary' will show a buffer of known contacts,
+;; and from there you can copy entry attributes, jump to their definitions,
+;; & etc.
+;;
+;; `org-people-insert' allows you to insert data from your contacts
+;; with helpful TAB-completion, and other API functions are available.
+
+;;; Version history (brief)
+;;
+;; 1.3 - `org-people-summary' can now be filtered against all known properties.
+;;       Not just the ones which are visible.  (i.e. Filter against ":ADDRESS")
 ;;
 ;; 1.2 - Rudimentary (single-contact-only) VCF export.
 ;;
@@ -46,41 +79,39 @@
 ;; 0.1 - initial release
 ;;
 
-
-;;
-;; Requirements/Dependencies
-;;
+;;; Code:
 (require 'cl-lib)
 (require 'seq)
 (require 'org)
 
 
-;;
 ;; Avoid byte-compile warnings for org functions
-;;
 (declare-function org-map-entries "org" (&rest args))
 (declare-function org-get-tags "org" (&optional pom inherit))
 (declare-function org-entry-properties "org" (&optional pom scope))
 (declare-function org-heading-components "org" (&optional pom))
 (declare-function org-complex-heading-regexp-format "org" ())
 
-;;
-;; Configuration
-;;
-
+;;; Configuration:
 (defvar org-people-search-tag "contact"
-  "Filter for finding org-entries to process.")
+  "This is the tag-filter for finding contacts.")
 
 (defvar org-people-search-type 'agenda
-  "Filter for finding org-entries to process.")
+  "The filter which is used for finding entries, via `org-map-entries'.
+
+By default this is configured to allow all of your agenda files to
+be processed.  You might consider replacing this with a list of
+file-paths, in which case only those specific files will be read
+for contacts.")
 
 (defvar org-people-summary-buffer-name
   "*Contacts*"
-  "The name of the buffer to create/use with `org-people-summary'.")
+  "The name of the buffer to create when `org-people-summary' is invoked.")
 
 (defvar org-people-ignored-properties
   (list :MARKER)
-  "Properties to ignore when inserting a person into a table, or in completion.")
+  "Properties to ignore when inserting a person into a table, or
+when completion is invoked.")
 
 
 
@@ -134,6 +165,20 @@ of the number of contacts you have."
 This uses `org-people-parse' to get the list of parsed/discovered contacts."
   (sort (hash-table-keys (org-people-parse)) #'string<))
 
+
+(defun org-people--all-properties (table)
+  "Return a sorted list of all distinct plist keys used in TABLE."
+  (let (keys)
+    (maphash
+     (lambda (_name plist)
+       (while plist
+         (push (car plist) keys)
+         (setq plist (cddr plist))))
+     table)
+    (sort (delete-dups keys)
+          (lambda (a b)
+            (string< (symbol-name a)
+                     (symbol-name b))))))
 
 
 (defun org-people--completion-annotation (name)
@@ -537,8 +582,8 @@ We just make the name bold."
   (let* ((completion-ignore-case t)
          (completion-styles '(basic substring partial-completion))
          (prop-str (completing-read
-                    "Property (e.g., :EMAIL, :PHONE, :TAGS): "
-                    '(":NAME" ":EMAIL" ":PHONE" ":TAGS")
+                    "Property to filter against: "
+                    (org-people--all-properties (org-people-parse))
                     nil t))
          (prop (intern prop-str))
          (value (read-string (format "Value to match for %s: " prop-str))))
