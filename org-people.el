@@ -40,25 +40,30 @@
 ;;
 ;; 1.5 - All linting fixes implemented.
 ;;
-;; 1.4 - `org-people-summary' now allows you to specify the fields which are displayed,
-;;       via the new `org-people-summary-properties' configuration value.
+;; 1.4 - `org-people-summary' now allows you to specify the fields
+;;       which are displayed, via the new `org-people-summary-properties'
+;;       configuration value.
 ;;
 ;; 1.3 - `org-people-summary' can now be filtered against all known properties.
 ;;       Not just the ones which are visible.  (i.e. Filter against ":ADDRESS")
 ;;
 ;; 1.2 - Rudimentary (single-contact-only) VCF export.
 ;;
-;; 1.1 - Special support for nickname, and case insensitivity by default for completion.
-;;       org-people-ignored-properties was introduced to ignore specific properties from
-;;       completion and table-generation.
+;; 1.1 - Special support for nickname, and case insensitivity by default for
+;;       completion.
+;;       org-people-ignored-properties was introduced to ignore specific
+;;       properties from completion and table-generation.
 ;;
-;; 1.0 - Process all agenda-files by default, via a tag search for ":contact:" (by default).
-;;       This is more generally useful, and removes configuration and our ad-hoc caching implementation.
+;; 1.0 - Process all agenda-files by default, via a tag search for
+;;       ":contact:" (by default). This is more generally useful, and
+;;       removes configuration and our ad-hoc caching implementation.
 ;;
-;; 0.9 - org-people-person-to-table shows all the data about one individual as an `org-mode' table.
+;; 0.9 - org-people-person-to-table shows all the data about one individual
+;;       as an `org-mode' table.
 ;;       Added test-cases in new file, org-people-test.el
 ;;
-;; 0.8 - Provide "[[org-person:Name Here]]" support with completion, clicking, and export attributes.
+;; 0.8 - Provide "[[org-person:Name Here]]" support with completion,
+;;       clicking, and export attributes.
 ;;       Make org-people-browse-name public and usefully available.
 ;;
 ;; 0.7 - Provide annotations for name-completion.
@@ -77,7 +82,8 @@
 ;;       org-people-summary is set to view-mode, so "q" buries the buffer.
 ;;
 ;; 0.2 - Added org-people-summary.
-;;       Updated all contacts to have :TAGS and :NAME properties where appropriate.
+;;       Updated all contacts to have :TAGS and :NAME properties
+;;       where appropriate.
 ;;
 ;; 0.1 - initial release
 ;;
@@ -352,7 +358,7 @@ See `org-people-get-by-property' for an example use of this function."
 ;; Generate org-mode tables
 ;;
 
-(defun org-people-person-to-table(name)
+(defun org-people-person-to-table (name)
   "Return table-data about a named contact.
 
 This function is designed to create an `org-mode' table, like so:
