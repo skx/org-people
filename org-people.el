@@ -143,7 +143,8 @@ being invoked by `org-people-insert'.")
     (define-key map (kbd "RET") #'org-people-summary--open)
     (define-key map (kbd "c") #'org-people-summary--copy-field)
     (define-key map (kbd "f") #'org-people-summary--filter-by-property)
-    (define-key map (kbd "v") #'org-people-summary--vcard))
+    (define-key map (kbd "v") #'org-people-summary--vcard)
+    map)
   "Keymap for `org-people-summary-mode'.")
 
 
