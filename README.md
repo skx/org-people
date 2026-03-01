@@ -31,6 +31,37 @@ The special `:NICKNAME:` property will be used for completion, alongside the per
 
 
 
+## Installation / Configuration Example
+
+The legacy way to install would be to clone this repository and ensure the directory is available upon your load-path, or copy your local lisp tree.
+
+This package _should_ shortly be available upon MELPA.
+
+Suggested usage if you're using the traditional approach:
+
+```
+(require 'org-people)
+
+; insert a contact "thing" at the current point.
+(global-set-key (kbd "C-c p") 'org-people-insert)
+
+; show a summary/table of contacts
+; The table is sortable, filterable, & etc.
+(global-set-key (kbd "C-c P") 'org-people-summary)
+```
+
+If you prefer `use-package` then this works:
+
+```
+(use-package org-people
+  :after org
+  :bind
+    (("C-c p" . org-people-insert)
+     ("C-c P" . org-people-summary)))
+```
+
+
+
 ## Adding Entries
 
 If you use `org-capture` you may use the following template to add a new entry:
@@ -63,15 +94,6 @@ These are the main user-focused functions within the package to work with contac
 * `org-people-person-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
 
-Suggested usage:
-
-```
-; insert a contact "thing" at the current point.
-(global-set-key (kbd "C-c p") 'org-people-insert)
-
-; show a summary of contacts - allow jumping to the definition, copying and filtering, etc.
-(global-set-key (kbd "C-c P") 'org-people-summary)
-```
 
 There are also functions for working with the parsed contacts:
 
