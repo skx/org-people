@@ -1,4 +1,4 @@
-;;; org-people - A package for working with a contact-list in org-mode files -*- lexical-binding: t; -*-
+;;; org-people --- Work with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Version: 1.5
@@ -132,6 +132,13 @@ These are properties which are specifically excluded when creating
 an `org-mode' table from a persons details, or when completion is
 being invoked by `org-people-insert'.")
 
+(defvar org-people-summary-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") #'org-people-summary--open)
+    (define-key map (kbd "c") #'org-people-summary--copy-field)
+    (define-key map (kbd "f") #'org-people-summary--filter-by-property)
+    (define-key map (kbd "v") #'org-people-summary--vcard))
+  "Keymap for `org-people-summary-mode'.")
 
 
 
@@ -695,13 +702,6 @@ Filtering can be applied (using a regexp), and fields copied."
       (tabulated-list-print t))
     (pop-to-buffer buf)))
 
-
-
-;; Open the contact details on RET, filter by `f'.
-(define-key org-people-summary-mode-map (kbd "RET") #'org-people-summary--open)
-(define-key org-people-summary-mode-map (kbd "c") #'org-people-summary--copy-field)
-(define-key org-people-summary-mode-map (kbd "f") #'org-people-summary--filter-by-property)
-(define-key org-people-summary-mode-map (kbd "v") #'org-people-summary--vcard)
 
 
 
