@@ -1,11 +1,13 @@
 ;;; org-people --- Work with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
-;; Author: Steve Kemp <steve@steve.fi>
+;; Copyright (C) 2026  Steve Kemp
+
+;; Author: Steve Kemp
+;; Maintainer: Steve Kemp
 ;; Version: 1.5
+;; Package-Requires: ((emacs "28.0") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
-
-;; Package-Requires: ((emacs "28.0") (org "9.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -23,6 +25,7 @@
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
 ;; A package to collect contacts from org-agenda files, and allow
 ;; operations to be carried out on them.
 ;;
@@ -37,6 +40,7 @@
 ;; with helpful TAB-completion, and other API functions are available.
 
 ;;; Version history (brief)
+
 ;;
 ;; 1.5 - All linting fixes implemented.
 ;;
@@ -89,6 +93,7 @@
 ;;
 
 ;;; Code:
+
 (require 'cl-lib)
 (require 'seq)
 (require 'org)
@@ -102,6 +107,7 @@
 (declare-function org-complex-heading-regexp-format "org" ())
 
 ;;; Configuration:
+
 (defvar org-people-search-tag "contact"
   "This is the tag-filter for finding contacts.")
 
