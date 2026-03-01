@@ -1,4 +1,4 @@
-;;; org-people.el - A package for working with a contact-list in org-mode files -*- lexical-binding: t; -*-
+;;; org-people - A package for working with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Version: 1.5
@@ -196,8 +196,7 @@ excluded from the completion."
           (insert (or (plist-get values choice) "")))
       (if person
           (user-error "No properties present for contact %s" person)
-        (user-error "No contact selected"))
-      )))
+        (user-error "No contact selected")))))
 
 
 
@@ -447,8 +446,7 @@ using the org-people: handler."
          (email   (plist-get contact :EMAIL))
          (phone   (plist-get contact :PHONE))
          (address (plist-get contact :ADDRESS))
-         (buf (find-file-noselect filename))
-         )
+         (buf (find-file-noselect filename)))
 
     (with-current-buffer buf
       (insert "BEGIN:VCARD\n")
@@ -567,7 +565,10 @@ Supports `(:PROP WIDTH)` style for custom widths."
   (tabulated-list-init-header))
 
 (defun org-people-summary--entry (plist)
-  "Convert PLIST to a `tabulated-list-mode' entry using `org-people-summary-properties'."
+  "Convert PLIST to a `tabulated-list-mode' entry.
+
+This formats using the value of `org-people-summary-properties' to
+format the entry for display."
   (let* ((name  (or (plist-get plist :NAME) ""))
          (columns
           (mapcar
