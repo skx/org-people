@@ -388,7 +388,7 @@ the generated table."
                    (substring (symbol-name (car b)) 1)))))
          ;; Convert to rows
          (rows
-          (cl-remove-if #'(lambda (s) (null s))
+          (cl-remove-if (lambda (s) (null s))
           (mapcar
            (lambda (pair)
              (if (cadr pair)
