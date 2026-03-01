@@ -1,6 +1,4 @@
-;;; org-people.el - A package for working with a contact-list in org-mode files
-
-;;; -*- lexical-binding: t; -*-
+;;; org-people.el - A package for working with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Version: 1.4
