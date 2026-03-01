@@ -1,7 +1,7 @@
 ;;; org-people.el - A package for working with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
 ;; Author: Steve Kemp <steve@steve.fi>
-;; Version: 1.4
+;; Version: 1.5
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
 
@@ -37,6 +37,8 @@
 ;; with helpful TAB-completion, and other API functions are available.
 
 ;;; Version history (brief)
+;;
+;; 1.5 - All linting fixes implemented.
 ;;
 ;; 1.4 - `org-people-summary' now allows you to specify the fields which are displayed,
 ;;       via the new `org-people-summary-properties' configuration value.
