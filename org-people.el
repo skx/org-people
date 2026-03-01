@@ -1,6 +1,6 @@
-;;; -*- lexical-binding: t; -*-
+;;; org-people.el - A package for working with a contact-list in org-mode files
 
-;; org-people.el - A package for working with a contact-list in an org-mode file
+;;; -*- lexical-binding: t; -*-
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Version: 1.4
@@ -120,8 +120,11 @@ for contacts.")
 
 (defvar org-people-ignored-properties
   (list :MARKER)
-  "Properties to ignore when inserting a person into a table, or
-when completion is invoked.")
+  "Properties which are generally ignored from contacts.
+
+These are properties which are specifically excluded when creating
+an `org-mode' table from a persons details, or when completion is
+being invoked by `org-people-insert'.")
 
 
 
@@ -137,7 +140,7 @@ when completion is invoked.")
 We only include data from headlines which have a tag matching
 `org-people-search-tag', and at least one property.
 
-It is assumed the org-mode caching and parsing layer is fast
+It is assumed the `org-mode' caching and parsing layer is fast
 enough that there won't be undue performance problems regardless
 of the number of contacts you have."
   (let ((table (make-hash-table :test #'equal)))
@@ -259,7 +262,9 @@ which might be associated with contacts."
 ;;
 
 (defun org-people--completion-annotation (name)
-  "Return a annotation-string for contact completion."
+  "Return a annotation-string for the specific candidate.
+
+NAME is the name of the contact."
   (let* ((plist (org-people-get-by-name name))
          (email (plist-get plist :EMAIL))
          (phone (plist-get plist :PHONE))
@@ -274,7 +279,10 @@ which might be associated with contacts."
      "  ")))
 
 (defun org-people--completion-table (string pred action)
-  "Return a completion-table for contact completion, including nicknames."
+  "Return a completion-table for contact completion.
+
+STRING PRED and ACTION are passed to `complete-with-action', and
+not used directly."
   (let* ((alias-table (org-people--alias-table))
          (candidates (hash-table-keys alias-table)))
     (if (eq action 'metadata)
@@ -311,10 +319,13 @@ This is basically the way of getting all data known about a given person."
   (gethash name (org-people-parse)))
 
 (defun org-people-get-by-property (property value &optional regexp)
-  "Return contacts by searching the contents of a specific property.
+  "Return contacts by searching the contents of a specific field.
 
-By default an exact string match is applied, however if REGEXP is true
-regexp is used instead."
+PROPERTY is the name of the property associated with entries, and
+VALUE is the string to match with.
+
+By default string-equality is used for matching, however if REGEXP
+is true then `string-match' is used instead."
   (org-people-filter (lambda(plist)
                        (let ((found (plist-get plist property)))
                          (if regexp
@@ -327,7 +338,7 @@ regexp is used instead."
   "Filter all known contacts by the given predicate.
 
 PRED-P should be a function which accepts the plist of properties associated
-with a given contact, and returns `t' if they should be kept.
+with a given contact, and returns t if they should be kept.
 
 See `org-people-get-by-property' for an example use of this function."
   (cl-loop
@@ -349,11 +360,11 @@ This function is designed to create an `org-mode' table, like so:
 
 #+NAME: myself
 #+BEGIN_SRC elisp :results value table :colnames \='(\"Field\" \"Value\")
-(org-people-person-to-table \"Steve Kemp\")
+\(org-people-person-to-table \"Steve Kemp\")
 #+END_SRC
 
-Properties included in `org-people-ignored-properties' are excluded from
-the generated table"
+Properties listed in `org-people-ignored-properties' are excluded from
+the generated table."
   (let* ((plist (org-people-get-by-name name))
          ;; Convert plist to list of (key . value) pairs
          (pairs (seq-partition plist 2))
@@ -390,7 +401,7 @@ This function is designed to create an `org-mode' table, like so:
 
 #+NAME: family-contacts
 #+BEGIN_SRC elisp :results value table
-(org-people-tags-to-table \"family\" \='(:NAME :PHONE))
+\(org-people-tags-to-table \"family\" \='(:NAME :PHONE))
 #+END_SRC
 
 PROPS is a list of property symbols to include, is nil we
@@ -708,10 +719,10 @@ Filtering can be applied (using a regexp), and fields copied."
 
 ;;;###autoload
 (defun org-people-add-descriptions ()
-  "Rewrite all [[org-people:XXX]] links in the current buffer to add
-a description (i.e. [[org-people:XXX][XXX]]).
+  "Populate descriptions to all [[org-people:XXX]] links in the current buffer.
 
-Only adds descriptions if they are missing."
+This ensures that all links have a description which matches the name of the
+contact, descriptions are only added if they are missing."
   (interactive)
   (save-excursion
     (goto-char (point-min))
