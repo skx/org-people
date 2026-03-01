@@ -138,27 +138,27 @@ When exported to HTML the person name will be made bold, rather than becoming a 
 
 You can add such a link via C-c C-l, as per usual, with TAB-completion support
 
+The function `org-people-add-descriptions` will update all `org-people:` links within the current document to ensure the description matches the link target, which makes the display more readable.
+
 
 
 ## Dynamic `org-mode` tables
 
-If you tag the contact-entries you can use those tags to create org-mode tables of matching entries.
-
-For example the following can auto-update:
+If you tag the contacts with more than just the `contacts` value then you may use those tags to build simple tables of matching entries.  For example the following can auto-update:
 
     #+NAME: get-family-contacts
     #+BEGIN_SRC elisp :results value table
     (org-people-tags-to-table "family")
     #+END_SRC
 
-If you prefer different columns to be included within your generated table you can specify them directly:
+If you prefer to include different columns in your generated table you can specify them directly:
 
     #+NAME: get-family-contacts
     #+BEGIN_SRC elisp :results value table
     (org-people-tags-to-table "family" '(:LINK :PHONE))
     #+END_SRC
 
-Rather than handling groups of contacts, via tags, you can also create a table including all data about a single named individual, by name:
+You may also create a table including all known data about a single named individual, by name:
 
     #+NAME: steve-kemp
     #+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
