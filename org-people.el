@@ -1,4 +1,4 @@
-;;; org-people --- Work with a contact-list in org-mode files -*- lexical-binding: t; -*-
+;;; org-people.el --- Work with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026  Steve Kemp
 
