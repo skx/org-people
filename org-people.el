@@ -189,10 +189,10 @@ for contacts.")
   "The name of the buffer to create when `org-people-summary' is invoked.")
 
 (defvar org-people-summary-properties
-  '(:NAME
+  '((:NAME 30)
     (:EMAIL 35)
-    (:PHONE 14)
-    (:TAGS 10))
+    (:PHONE 15)
+    (:TAGS  15))
   "List of properties to display in `org-people-summary'.")
 
 (defvar org-people-ignored-properties
@@ -618,9 +618,9 @@ Defaults are used if WIDTH is not specified."
    ((symbolp col-spec)
     (pcase col-spec
       (:NAME 30)
-      (:EMAIL 30)
+      (:EMAIL 35)
       (:PHONE 15)
-      (:TAGS  20)
+      (:TAGS  15)
       (_ 20)))  ; fallback for new properties
 
    ;; fallback in case of weird input
@@ -650,11 +650,16 @@ Supports `(:PROP WIDTH)` style for custom widths."
   (setq tabulated-list-padding 2)
 
   ;; Default sort = first column
+  ;; We support both ":NAME" and ":NAME WIDTH" here, via the consp test.
   (setq tabulated-list-sort-key
-        (cons (capitalize
-               (substring
-                (symbol-name (car org-people-summary-properties)) 1))
-              nil))
+        (let* ((first (car org-people-summary-properties))
+               (name  (if (consp first)
+                          (car first)
+                        first)))
+          (cons (capitalize
+                 (substring
+                  (symbol-name name) 1))
+                nil)))
 
   (add-hook 'tabulated-list-revert-hook
             #'org-people-summary--refresh
