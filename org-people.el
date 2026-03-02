@@ -582,7 +582,7 @@ using the org-people: handler."
     (when (re-search-forward org-property-drawer-re
                              (save-excursion (org-end-of-subtree t t))
                              t)
-      (org-flag-region (match-beginning 0)
+      (org-fold-region (match-beginning 0)
                        (match-end 0)
                        nil))))
 
