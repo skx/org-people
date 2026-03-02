@@ -32,12 +32,74 @@
 ;; By default all tree-items with a "contact" tag, which contain
 ;; properties, are considered contacts.
 ;;
-;; Once loaded `org-people-summary' will show a buffer of known contacts,
-;; and from there you can copy entry attributes, jump to their definitions,
-;; & etc.
+;; An example pair of contacts would look like this inside an org-mode
+;; file:
 ;;
-;; `org-people-insert' allows you to insert data from your contacts
-;; with helpful TAB-completion, and other API functions are available.
+;;   * People
+;;     ** Alice                        :family:contact:
+;;     :PROPERTIES
+;;     :ADDRESS: 32 Something Street
+;;     :EMAIL: alice@example.com
+;;     :PHONE: +123 456 789
+;;     :CHILDREN: Mallory
+;;     :NICKNAME: Allu
+;;     :END
+;;     ** Bob                           :colleague:contact:
+;;     :PROPERTIES
+;;     :ADDRESS: 32 Something Lane
+;;     :EMAIL: bob@example.com
+;;     :PHONE: +123 456 987
+;;     :END
+;;
+;; The specific properties used don't matter, although it seems natural
+;; to use :ADDRESS, :EMAIL, and :PHONE.  A contact will be recorded
+;; if there is at least one property present and the "contact" tag
+;; being present.
+;;
+;; The name of the tag used to search for entries is specified in the
+;; org-people-search-tag variable.
+;;
+
+;;; Basic operations
+
+;; Once your agenda files have been loaded `org-people-summary' will
+;; show a buffer of all known contacts, and from there you can copy
+;; attributes, jump to their definitions, & etc.
+;;
+;; `org-people-insert' allows you to interactively insert data from
+;; your contacts with helpful TAB-completion, on the attribute name
+;; and person.
+
+;;; org-table helpers
+
+;; If you tag the contacts with more than just the `contacts` value
+;; then you may use those tags to build simple tables of matching entries.
+;; For example the following can auto-update:
+;;
+;;    #+NAME: get-family-contacts
+;;    #+BEGIN_SRC elisp :results value table
+;;    (org-people-tags-to-table "family")
+;;    #+END_SRC
+;;
+;; If you prefer to include different columns in your generated table you
+;; can specify them directly:
+;;
+;;   #+NAME: get-family-contacts
+;;   #+BEGIN_SRC elisp :results value table
+;;   (org-people-tags-to-table "family" '(:LINK :PHONE))
+;;   #+END_SRC
+;;
+;; You may also create a table including all known data about a single named
+;; individual:
+;;
+;;    #+NAME: steve-kemp
+;;    #+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
+;;    (org-people-person-to-table "Steve Kemp")
+;;    #+END_SRC
+;;
+;; In this case properties listed in `org-people-ignored-properties` will
+;; be ignored and excluded from the generated table.
+
 
 ;;; Version history (brief)
 
@@ -59,7 +121,7 @@
 ;;       properties from completion and table-generation.
 ;;
 ;; 1.0 - Process all agenda-files by default, via a tag search for
-;;       ":contact:" (by default). This is more generally useful, and
+;;       ":contact:" (by default).  This is more generally useful, and
 ;;       removes configuration and our ad-hoc caching implementation.
 ;;
 ;; 0.9 - org-people-person-to-table shows all the data about one individual

@@ -25,7 +25,7 @@ test-cases:
   :END
 ```
 
-It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other properties, however no properties are mandatory or expected.  The contact will be added providing there is at least one property in-place, and the "contact" tag is present.  The headline itself is used as the contact name.
+It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other similar properties, however no specific properties are mandatory or expected.  The contact will be recognized providing there is at least one property present, and the "contact" tag is present.  The headline itself is used as the contact name.
 
 The special `:NICKNAME:` property will be used for completion, alongside the person's name, if it is present, but this is optional.
 
@@ -35,7 +35,7 @@ The special `:NICKNAME:` property will be used for completion, alongside the per
 
 The legacy way to install would be to clone this repository and ensure the directory is available upon your load-path, or copy your local lisp tree.
 
-This package _should_ shortly be available upon MELPA.
+The package is now available upon MELPA, if you wish to install it from there.
 
 Suggested usage if you're using the traditional approach:
 
@@ -125,20 +125,16 @@ If you have two contacts with the same name one will overwrite the other.  This 
 
 ## org-mode links
 
-This package defines an `org-people:` handler, to jump to your contact-list entries when clicked.
+This package defines a link-handler for the `org-people:` protocol, which will to the definition of the given contact when clicked.   You can add such a link via `C-c C-l`, as expected, and you'll find TAB completion works for populating the protocol-name and the contact's name.
 
-Inside org-mode files just create links using that protocols:
+A link would look like this:
 
     * This is a headline
     [[org-people:Steve Kemp]] wrote this package.
 
-This will jump to the definition of the named person (me).
+When exported to HTML the person name's will be made bold, rather than becoming a link, which is probably what you want.
 
-When exported to HTML the person name will be made bold, rather than becoming a link, which is probably what you want.
-
-You can add such a link via C-c C-l, as per usual, with TAB-completion support
-
-The function `org-people-add-descriptions` will update all `org-people:` links within the current document to ensure the description matches the link target, which makes the display more readable.
+The utility function `org-people-add-descriptions` will update all `org-people:` links within the current document to ensure the description matches the link target, which makes the display more readable.
 
 
 
@@ -158,7 +154,7 @@ If you prefer to include different columns in your generated table you can speci
     (org-people-tags-to-table "family" '(:LINK :PHONE))
     #+END_SRC
 
-You may also create a table including all known data about a single named individual, by name:
+You may also create a table including all known data about a single named individual:
 
     #+NAME: steve-kemp
     #+BEGIN_SRC elisp :results value table :colnames '("Field" "Value")
@@ -176,26 +172,24 @@ You may also create a table including all known data about a single named indivi
     | Phone       | +358123456789                           |
     | Tags        | (me)                                    |
 
+In this case properties listed in `org-people-ignored-properties` will be ignored and excluded from the generated table.
+
 
 
 ## Summary View
 
 The `org-people-summary` function shows a table of all your known contacts.
 
-You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, which has the following defaults:
+You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, which defaults to showing the name, email, phone-number and tags associated with each entry.
 
-    (defvar org-people-summary-properties
-       '(:NAME :EMAIL :PHONE :TAGS)
-       "List of properties to display in `org-people-summary'.")
+Some keybindings are setup in the `org-people-summary-mode-map`:
 
-Some keybindings are setup:
-
-* `RET` goto the definition of the contact
+* `RET` jump to the definition of the contact.
 * `c` Copy the field under the point.
 * `f` Filter the view, by property.
   * Even properties which are not visible can be used.
   * e.g. ":ADDRESS" "Finland" will show only Finnish residents.
-* `v` - Export the contact.
+* `v` - Export the contact to a VCF file.
 
 
 
