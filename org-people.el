@@ -214,6 +214,7 @@ being invoked by `org-people-insert'.")
     (define-key map (kbd "RET") #'org-people-summary--open)
     (define-key map (kbd "c") #'org-people-summary--copy-field)
     (define-key map (kbd "f") #'org-people-summary--filter-by-property)
+    (define-key map (kbd "s") #'isearch-forward)
     (define-key map (kbd "v") #'org-people-summary--vcard)
     map)
   "Keymap for `org-people-summary-mode'.")
@@ -577,7 +578,6 @@ using the org-people: handler."
 
     (pop-to-buffer buf)))
 
-
 (defun org-people--open-properties ()
   "Open the property drawer beneath current headline."
   (save-excursion
@@ -649,11 +649,7 @@ Supports `(:PROP WIDTH)` style for custom widths."
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
-
-
-  (setq tabulated-list-format
-        (org-people-summary--format))
-
+  (setq tabulated-list-format (org-people-summary--format))
   (setq tabulated-list-padding 2)
 
   ;; Default sort = first column
