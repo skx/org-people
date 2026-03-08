@@ -202,7 +202,7 @@ for contacts.")
   "List of properties to display in `org-people-summary'.")
 
 (defvar org-people-ignored-properties
-  (list :MARKER)
+  (list :CREATED :ID :MARKER)
   "Properties which are generally ignored from contacts.
 
 These are properties which are specifically excluded when creating
