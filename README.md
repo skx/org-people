@@ -45,8 +45,7 @@ Suggested usage if you're using the traditional approach:
 ; insert a contact "thing" at the current point.
 (global-set-key (kbd "C-c p") 'org-people-insert)
 
-; show a summary/table of contacts
-; The table is sortable, filterable, & etc.
+; Show a table of all known contacts.  The table is sortable, filterable, & etc.
 (global-set-key (kbd "C-c P") 'org-people-summary)
 ```
 
@@ -182,6 +181,9 @@ The `org-people-summary` function shows a table of all your known contacts.
 
 You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, which defaults to showing the name, email, phone-number and tags associated with each entry.
 
+If a given column would be 100% empty (i.e. no known contacts have a property
+with that name) then the column will be removed from display.
+
 Some keybindings are setup in the `org-people-summary-mode-map`:
 
 * `RET` jump to the definition of the contact.
@@ -189,6 +191,7 @@ Some keybindings are setup in the `org-people-summary-mode-map`:
 * `f` Filter the view, by property.
   * Even properties which are not visible can be used.
   * e.g. ":ADDRESS" "Finland" will show only Finnish residents.
+* `s` Initiate a search forward, via `isearch-forward`.
 * `v` - Export the contact to a VCF file.
 
 

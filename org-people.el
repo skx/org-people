@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: 1.8.1
+;; Version: 1.9
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
@@ -104,6 +104,9 @@
 ;;; Version history (brief)
 
 ;;
+;; 1.9  - Any column included in `org-people-summary-properties' which is 100%
+;;        empty, and not present in any known contact, will be removed.
+;;
 ;; 1.8.1 - Improvement: Filtering on :TAGS property in `M-x org-people-summary`
 ;;         uses sub-string matches of entries, rather than membership testing.
 ;;
@@ -197,9 +200,13 @@ for contacts.")
 (defvar org-people-summary-properties
   '((:NAME 30)
     (:EMAIL 35)
+    (:FLAG 5)     ; 🇬🇧 / 🇫🇮 / etc.
     (:PHONE 15)
     (:TAGS  15))
-  "List of properties to display in `org-people-summary'.")
+  "List of properties to display in `org-people-summary'.
+
+If a column would be 100% empty, i.e. no contacts have that property
+defined, then it will be removed automatically.")
 
 (defvar org-people-ignored-properties
   (list :CREATED :ID :MARKER)
@@ -530,6 +537,37 @@ using the org-people: handler."
 ;; summary-buffer code, and associated helpers
 ;;
 
+(defun org-people-summary--prop (entry)
+  "Helper to get the name of properties for column display.
+
+This is used to get properties from `org-people-summary-properties'."
+  (if (listp entry) (car entry) entry))
+
+(defun org-people-summary--column-used-p (prop plists)
+  "Determine whether a property is present in the given plist entries.
+
+This is used to filter out columns which are empty from the configuration
+value of `org-people-summary-properties'."
+  (cl-some
+   (lambda (plist)
+     (let ((val (plist-get plist prop)))
+       (cond
+        ((eq prop :TAGS) (and val (> (length val) 0)))
+        (t (and val (not (string-empty-p val)))))))
+   plists))
+
+(defun org-people-summary--visible-properties (plists)
+  "Remove the properties which are empty from the list.
+
+This is used to remove empty columns from the `org-people-summary'
+view of contacts."
+  (cl-remove-if-not
+   (lambda (entry)
+     (org-people-summary--column-used-p
+      (org-people-summary--prop entry)
+      plists))
+   org-people-summary-properties))
+
 (defun org-people-export-to-vcard (contact)
   "Pop up a new buffer containing CONTACT (a plist) formatted as a vCard 3.0."
   (interactive)
@@ -664,6 +702,12 @@ Supports `(:PROP WIDTH)` style for custom widths."
                   (symbol-name name) 1))
                 nil)))
 
+  (let ((valid-columns
+       (mapcar (lambda (c) (car c))
+               (append tabulated-list-format nil))))
+  (unless (member (car-safe tabulated-list-sort-key) valid-columns)
+    (setq tabulated-list-sort-key nil)))
+
   (add-hook 'tabulated-list-revert-hook
             #'org-people-summary--refresh
             nil t)
@@ -675,7 +719,7 @@ Supports `(:PROP WIDTH)` style for custom widths."
 
 This formats using the value of `org-people-summary-properties' to
 format the entry for display."
-  (let* ((name  (or (plist-get plist :NAME) ""))
+  (let* ((name (or (plist-get plist :NAME) ""))
          (columns
           (mapcar
            (lambda (entry)
@@ -687,14 +731,38 @@ format the entry for display."
                             (or (plist-get plist :TAGS) '())
                             ","))
                 (t (or (plist-get plist prop) "")))))
-           org-people-summary-properties)))
+           org-people-summary--active-properties)))
     (list name (vconcat columns))))
 
 (defun org-people-summary--refresh ()
   "Populate `tabulated-list-entries'."
-  (setq tabulated-list-entries
-        (mapcar #'org-people-summary--entry
-                (org-people--all-plists))))
+  (let* ((plists (org-people--all-plists))
+         (props  (org-people-summary--visible-properties plists)))
+
+    ;; store active properties
+    (setq-local org-people-summary--active-properties props)
+
+    ;; rebuild format
+    (setq tabulated-list-format
+          (vconcat
+           (mapcar
+            (lambda (entry)
+              (let* ((prop  (if (listp entry) (car entry) entry))
+                     (width (if (listp entry) (cadr entry) 20)))
+                (list (capitalize (substring (symbol-name prop) 1))
+                      width
+                      t)))
+            props)))
+
+    ;; IMPORTANT: clear sort key before header init
+    (setq tabulated-list-sort-key nil)
+
+    ;; rebuild header
+    (tabulated-list-init-header)
+
+    ;; populate rows
+    (setq tabulated-list-entries
+          (mapcar #'org-people-summary--entry plists))))
 
 (defun org-people-summary--open ()
   "Open the Org entry for the contact at point."
