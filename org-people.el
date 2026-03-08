@@ -53,11 +53,10 @@
 ;;
 ;; The specific properties used don't matter, although it seems natural
 ;; to use :ADDRESS, :EMAIL, and :PHONE.  A contact will be recorded
-;; if there is at least one property present and the "contact" tag
-;; being present.
+;; if there is at least one property present alongside the "contact" tag.
 ;;
 ;; The name of the tag used to search for entries is specified in the
-;; org-people-search-tag variable.
+;; `org-people-search-tag' variable and can be customized.
 ;;
 
 ;;; Basic operations
@@ -69,6 +68,12 @@
 ;; `org-people-insert' allows you to interactively insert data from
 ;; your contacts with helpful TAB-completion, on the attribute name
 ;; and person.
+;;
+;; If you have links to people within your document (e.g. a link
+;; such as [[org-people:Steve Kemp]] you can use the helper
+;; `org-people-add-descriptions' to automatically add the contact
+;; description automatically.  This makes them look cleaner.
+;;
 
 ;;; org-table helpers
 
@@ -106,11 +111,13 @@
 ;;
 ;; 1.9  - Any column included in `org-people-summary-properties' which is 100%
 ;;        empty, and not present in any known contact, will be removed.
+;;        Updated to ignore :ID and :CREATED by default in completion and in the
+;;        table-generation from `org-people-person-to-table'.
 ;;
 ;; 1.8.1 - Improvement: Filtering on :TAGS property in `M-x org-people-summary`
 ;;         uses sub-string matches of entries, rather than membership testing.
 ;;
-;; 1.7 - BugFix: First column in org-people-summary-properties is used as the
+;; 1.7 - BugFix: First column in `org-people-summary-properties' is used as the
 ;;       default sort key.  Now allows a width to be defined too.
 ;;
 ;; 1.6 - Open the property drawers when jumping to a contact, to allow
@@ -136,7 +143,7 @@
 ;;       ":contact:" (by default).  This is more generally useful, and
 ;;       removes configuration and our ad-hoc caching implementation.
 ;;
-;; 0.9 - org-people-person-to-table shows all the data about one individual
+;; 0.9 - `org-people-person-to-table' shows all the data about one individual
 ;;       as an `org-mode' table.
 ;;       Added test-cases in new file, org-people-test.el
 ;;
@@ -538,13 +545,18 @@ using the org-people: handler."
 ;;
 
 (defun org-people-summary--prop (entry)
-  "Helper to get the name of properties for column display.
+  "Get the name of a property used for column display.
+
+ENTRY is either the name of the item, or the list containing the
+name in the first entry.
 
 This is used to get properties from `org-people-summary-properties'."
   (if (listp entry) (car entry) entry))
 
 (defun org-people-summary--column-used-p (prop plists)
   "Determine whether a property is present in the given plist entries.
+
+PROP is the property being tested against each PLISTS entry.
 
 This is used to filter out columns which are empty from the configuration
 value of `org-people-summary-properties'."
@@ -558,6 +570,8 @@ value of `org-people-summary-properties'."
 
 (defun org-people-summary--visible-properties (plists)
   "Remove the properties which are empty from the list.
+
+PLISTS is the list of contact properties.
 
 This is used to remove empty columns from the `org-people-summary'
 view of contacts."
