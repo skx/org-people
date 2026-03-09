@@ -215,6 +215,8 @@ for contacts.")
 If a column would be 100% empty, i.e. no contacts have that property
 defined, then it will be removed automatically.")
 
+
+
 (defvar org-people-ignored-properties
   (list :CREATED :ID :MARKER)
   "Properties which are generally ignored from contacts.
@@ -563,27 +565,39 @@ using the org-people: handler."
 
 SPEC can be:
 - a symbol, e.g. :EMAIL
-- a list starting with a symbol, optionally followed by WIDTH and keyword overrides.
+- a list starting with a symbol, followed by WIDTH and any
+  optional keyword overrides.
 
 Example: (:NAME 30 :title \"Full Name\" :visible nil)"
   (let* ((prop (if (listp spec) (car spec) spec))
-         (width (or (cl-find-if #'numberp (if (listp spec) (cdr spec) nil)) 20))
-         (visible (let ((v (plist-get (if (listp spec) (cdr spec) nil) :visible)))
-                    (if (null v) t v)))
-         (title (capitalize (substring (symbol-name prop) 1)))
-         (getter (cond
-                  ((eq prop :TAGS)
-                   (lambda (plist)
-                     (mapconcat #'identity (or (plist-get plist :TAGS) '()) ",")))
-                  (t
-                   (lambda (plist) (or (plist-get plist prop) ""))))))
+         (plist (if (listp spec) (cdr spec) nil))
+         ;; width override: first number in list or :width
+         (width (or (cl-find-if #'numberp plist)
+                    (plist-get plist :width)
+                    20))
+         ;; visibility
+         (visible (if (plist-member plist :visible)
+                      (plist-get plist :visible)
+                    t))
+         ;; title override or auto-generated
+         (title (or (plist-get plist :title)
+                    (capitalize (substring (symbol-name prop) 1))))
+         ;; getter override or default
+         (getter (or (plist-get plist :getter)
+                     (cond
+                      ((eq prop :TAGS)
+                       (lambda (plist)
+                         (mapconcat #'identity (or (plist-get plist :TAGS) '()) ",")))
+                      (t
+                       (lambda (plist)
+                         (or (plist-get plist prop) "")))))))
+    ;; make the column struct
     (make-org-people-column
      :prop prop
      :width width
      :title title
      :getter getter
      :visible visible)))
-
 
 ;; ------------------------------------------------------------
 ;; Helper functions
@@ -625,16 +639,51 @@ Example: (:NAME 30 :title \"Full Name\" :visible nil)"
                      (funcall (org-people-column-getter col) plist))
                    columns)))))
 
+
 (defun org-people-summary--refresh ()
-  "Refresh the org-people summary buffer."
+  "Populate `tabulated-list-entries` and rebuild the table header.
+
+Handles:
+- Dynamic removal of empty columns
+- First-column overrides for title and getter
+- Custom titles, getters, widths, visibility
+- Keeps `tabulated-list-format` in sync"
   (let* ((plists (org-people--all-plists))
-         (columns (org-people-summary--active-columns plists)))
+         ;; Only include visible columns that have at least one non-empty value
+         (columns (cl-remove-if-not
+                   (lambda (col)
+                     (and (org-people-column-visible col)
+                          (cl-some (lambda (plist)
+                                     (let ((val (funcall (org-people-column-getter col) plist)))
+                                       (and val (not (string-empty-p val)))))
+                                   plists)))
+                   org-people-summary-columns))
+         (first-col (car columns))
+         (other-cols (cdr columns)))
     (setq-local org-people-summary--active-columns columns)
-    (setq tabulated-list-format (org-people-summary--build-format columns))
-    ;; reset sort key to avoid stale column errors
+    ;; Build tabulated-list-format using :title and :width from the structs
+    (setq tabulated-list-format
+          (vconcat
+           (mapcar (lambda (col)
+                     (list (org-people-column-title col)
+                           (org-people-column-width col)
+                           t))
+                   columns)))
+    ;; Sort key reset to avoid stale-column errors
     (setq tabulated-list-sort-key nil)
-    (tabulated-list-init-header)
-    (setq tabulated-list-entries (mapcar #'org-people-summary--entry plists))))
+    ;; Build entries
+    (setq tabulated-list-entries
+          (mapcar (lambda (plist)
+                    (let ((id (funcall (org-people-column-getter first-col) plist)))
+                      (list id
+                            ;; all columns including first
+                            (vconcat
+                             (mapcar (lambda (col)
+                                       (funcall (org-people-column-getter col) plist))
+                                     columns)))))
+                  plists))
+    ;; Initialize header
+    (tabulated-list-init-header)))
 
 (defun org-people-summary--toggle-column ()
   "Interactively toggle visibility of a column."
@@ -753,17 +802,11 @@ Example: (:NAME 30 :title \"Full Name\" :visible nil)"
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
-  ;; Generate full column structs
-  (setq org-people-summary-columns
-        (mapcar #'org-people-summary--make-column
-                org-people-summary-properties))
-
   (setq tabulated-list-padding 2)
   (setq tabulated-list-sort-key '("Name" . nil))
   (org-people-summary--refresh)
   (tabulated-list-init-header)
-  (tabulated-list-print)
-  )
+  (tabulated-list-print))
 
 
 ;;
@@ -855,6 +898,11 @@ This allows sorting by each column, etc.
 
 Filtering can be applied (using a regexp), and fields copied."
   (interactive)
+
+  ;; Generate full column structs - always up to date
+  (setq org-people-summary-columns
+        (mapcar #'org-people-summary--make-column
+                org-people-summary-properties))
 
   (let ((buf (get-buffer-create org-people-summary-buffer-name)))
     (with-current-buffer buf

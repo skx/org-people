@@ -114,6 +114,27 @@ No special configuration is required, although if you wish to use a different ta
 
 If you wished to limit parsing to only a single named file you could set `org-people-search-type` to be a list containing the name(s) of files to process, otherwise all agenda files will be read.
 
+Finally the configuration of the columns has been expanded, in the past we allowed setting the name and column
+width like so:
+
+```
+(setq org-people-summary-properties
+   '((:NAME 30
+     (:EMAIL 35))))
+```
+
+Now you may add optional configuration to override the column names, the accessor, etc.  This allows you to
+create more dynamic values.  For example:
+
+```
+(setq org-people-summary-properties
+      '((:NAME  :width 25)
+        (:EMAIL :width 30)
+        (:PHONE :width 15 :title "Digits")
+        :TAGS
+        (:MEOW  :getter (lambda (plist) (concat (plist-get plist :COUNTRY) " [" (plist-get plist :FLAG) "]" )))))
+```
+
 
 
 ## Limitations
