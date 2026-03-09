@@ -123,8 +123,8 @@ width like so:
      (:EMAIL 35))))
 ```
 
-Now you may add optional configuration to override the column names, the accessor, etc.  This allows you to
-create more dynamic values.  For example:
+Now you may add optional configuration to override the column names, the width and even the function which
+populates the value.  This allows you to create dynamic values.  For example see the last item here:
 
 ```
 (setq org-people-summary-properties
@@ -212,7 +212,10 @@ Some keybindings are setup in the `org-people-summary-mode-map`:
 * `f` Filter the view, by property.
   * Even properties which are not visible can be used.
   * e.g. ":ADDRESS" "Finland" will show only Finnish residents.
+* `R` reset the state of columns.
 * `s` Initiate a search forward, via `isearch-forward`.
+* `t` Toggle visibility of a named column.
+* `T` Hide the current column.
 * `v` - Export the contact to a VCF file.
 
 

@@ -113,6 +113,8 @@
 ;;        empty, and not present in any known contact, will be removed.
 ;;        Updated to ignore :ID and :CREATED by default in completion and in the
 ;;        table-generation from `org-people-person-to-table'.
+;;        The summary-properties may override the name, width and the attribute
+;;        extraction function to make things very dynamic.
 ;;
 ;; 1.8.1 - Improvement: Filtering on :TAGS property in `M-x org-people-summary`
 ;;         uses sub-string matches of entries, rather than membership testing.
@@ -205,11 +207,11 @@ for contacts.")
   "The name of the buffer to create when `org-people-summary' is invoked.")
 
 (defvar org-people-summary-properties
-  '((:NAME 30)
-    (:EMAIL 35)
-    (:FLAG 5)     ; 🇬🇧 / 🇫🇮 / etc.
-    (:PHONE 15)
-    (:TAGS  15))
+  '((:NAME  :width 30)
+    (:EMAIL :width 35)
+    (:FLAG  :width 5)     ; 🇬🇧 / 🇫🇮 / etc.
+    (:PHONE :width 15)
+    (:TAGS  :width 15))
   "List of properties to display in `org-people-summary'.
 
 If a column would be 100% empty, i.e. no contacts have that property
