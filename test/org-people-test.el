@@ -170,8 +170,7 @@
 (ert-deftest org-people-summary-entry-test ()
   "Test conversion of plist to tabulated-list entry."
   (org-people--with-mocked-people
-     (org-people-summary--refresh)
-
+     (org-people-summary)
      (let* ((plist (org-people-get-by-name "Alice Smith"))
            (entry (org-people-summary--entry plist)))
       (should (equal (car entry) "Alice Smith"))
@@ -185,7 +184,8 @@
 (ert-deftest org-people-summary-open-test ()
   "Test RET opens correct contact."
   (org-people--with-mocked-people
-    (let ((opened nil))
+   (org-people-summary)
+   (let ((opened nil))
       (cl-letf (((symbol-function 'org-people-browse-name)
                  (lambda (name) (setq opened name))))
         (with-temp-buffer
@@ -211,14 +211,22 @@
       (cl-letf (((symbol-function 'kill-new)
                  (lambda (value) (setq copied value))))
         (with-temp-buffer
-          (org-people-summary-mode)
-          (org-people-summary--refresh)
+          (org-people-summary)
           (tabulated-list-print)
           (goto-char (point-min))
           ;; Move into Email column (approximate)
           (forward-char 35)
           (org-people-summary--copy-field)
-          (should (equal copied "alice@example.com")))))))
+          (should (equal copied "alice@example.com"))
+          ;; And the phone number
+          (forward-char 35)
+          (org-people-summary--copy-field)
+          (should (equal copied "111-222-3333"))
+          ;; next line for bob.
+          (forward-line)
+          (org-people-summary--copy-field)
+          (should (equal copied "Bob Jones"))
+          )))))
 
 
 
