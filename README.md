@@ -218,6 +218,8 @@ Some keybindings are setup in the `org-people-summary-mode-map`:
 * `T` Hide the current column.
 * `v` - Export the contact to a VCF file.
 
+Press `?` to see all bindings within the mode-map.
+
 
 
 ## Testing
