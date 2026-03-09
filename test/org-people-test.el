@@ -323,8 +323,7 @@
          (should (search-forward "BEGIN:VCARD" nil t))
          (should (search-forward "FN:Alice Smith" nil t))
          (should (search-forward "EMAIL;TYPE=INTERNET:alice@example.com" nil t))
-         (set-buffer-modified-p nil)
-         (kill-buffer buf))))))
+         (set-buffer-modified-p nil))))))
 
 ;; ----------------------------------------------------------------------
 ;; Run tests
