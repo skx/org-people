@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: 1.9
+;; Version: 1.9.1
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
@@ -108,6 +108,9 @@
 
 ;;; Version history (brief)
 
+;;
+;; 1.9.1 - Removed some unused functions and made the code byte-compile clean
+;;         again.
 ;;
 ;; 1.9  - Any column included in `org-people-summary-properties' which is 100%
 ;;        empty, and not present in any known contact, will be removed.
@@ -616,21 +619,6 @@ Example: (:NAME 30 :title \"Full Name\" :visible nil)"
                  (and val (not (string-empty-p val)))))
              plists)))
 
-(defun org-people-summary--active-columns (plists)
-  "Return visible columns that have at least one non-empty value in PLISTS."
-  (cl-remove-if-not (lambda (col)
-                      (org-people-summary--column-used-p col plists))
-                    (org-people-summary--visible-columns)))
-
-(defun org-people-summary--build-format (columns)
-  "Build `tabulated-list-format' from COLUMNS."
-  (vconcat
-   (mapcar (lambda (col)
-             (list (org-people-column-title col)
-                   (org-people-column-width col)
-                   t))
-           columns)))
-
 (defun org-people-summary--entry (plist)
   "Build tabulated-list entry for PLIST."
   (let ((columns org-people-summary--active-columns)
@@ -641,15 +629,14 @@ Example: (:NAME 30 :title \"Full Name\" :visible nil)"
                      (funcall (org-people-column-getter col) plist))
                    columns)))))
 
-
 (defun org-people-summary--refresh ()
-  "Populate `tabulated-list-entries` and rebuild the table header.
+  "Populate `tabulated-list-entries' and rebuild the table header.
 
 Handles:
 - Dynamic removal of empty columns
 - First-column overrides for title and getter
 - Custom titles, getters, widths, visibility
-- Keeps `tabulated-list-format` in sync"
+- Keeps `tabulated-list-format' in sync"
   (let* ((plists (org-people--all-plists))
          ;; Only include visible columns that have at least one non-empty value
          (columns (cl-remove-if-not
@@ -660,8 +647,7 @@ Handles:
                                        (and val (not (string-empty-p val)))))
                                    plists)))
                    org-people-summary-columns))
-         (first-col (car columns))
-         (other-cols (cdr columns)))
+         (first-col (car columns)))
     (setq-local org-people-summary--active-columns columns)
     ;; Build tabulated-list-format using :title and :width from the structs
     (setq tabulated-list-format
@@ -701,7 +687,7 @@ Handles:
       (tabulated-list-print t))))
 
 (defun org-people-summary--column-at-point ()
-  "Return index of column at point."
+  "Return the index of column at point."
   (let ((pos (current-column))
         (i 0)
         (offset 0)
@@ -716,7 +702,11 @@ Handles:
       nil)))
 
 (defun org-people-summary--hide-this-column ()
-  "Toggle the visibility of the column under the point."
+  "Toggle the visibility of the column under the point.
+
+In practice this means hide the column, after all if a column
+isn't visible then it cannot be shown so the point cannot be
+over it."
   (interactive)
   (let* ((idx ( org-people-summary--column-at-point))
          (col (nth idx org-people-summary--active-columns)))
@@ -728,7 +718,10 @@ Handles:
     (message "Column '%s' hidden" (org-people-column-title col))))
 
 (defun org-people-summary-show-all-columns ()
-  "Show all columns."
+  "Show all columns.
+
+This reinstates any columns which might have had their visibility
+toggled interactively.  It will not restore columns which are empty."
   (interactive)
   (dolist (col org-people-summary-columns)
     (setf (org-people-column-visible col) t))
@@ -900,7 +893,6 @@ This allows sorting by each column, etc.
 
 Filtering can be applied (using a regexp), and fields copied."
   (interactive)
-
   ;; Generate full column structs - always up to date
   (setq org-people-summary-columns
         (mapcar #'org-people-summary--make-column
