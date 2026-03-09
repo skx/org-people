@@ -802,6 +802,7 @@ toggled interactively.  It will not restore columns which are empty."
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
+  (setq-local show-trailing-whitespace nil)
   (setq tabulated-list-padding 2)
   (setq tabulated-list-sort-key '("Name" . nil))
   (org-people-summary--refresh)
