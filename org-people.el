@@ -66,8 +66,8 @@
 ;; attributes, jump to their definitions, & etc.
 ;;
 ;; `org-people-insert' allows you to interactively insert data from
-;; your contacts with helpful TAB-completion, on the attribute name
-;; and person.
+;; your contacts with helpful TAB-completion, on both the name of the
+;; contact and the attribute name to be inserted.
 ;;
 ;; If you have links to people within your document (e.g. a link
 ;; such as [[org-people:Steve Kemp]] you can use the helper
@@ -77,9 +77,12 @@
 
 ;;; org-table helpers
 
-;; If you tag the contacts with more than just the `contacts` value
-;; then you may use those tags to build simple tables of matching entries.
-;; For example the following can auto-update:
+;; Contacts need the "contacts" tag to be added to allow them to be found
+;; and included in the `org-people' functions, but you can also use the
+;; standard `org-mode' facilities to add additional tags to entries too.
+;; Using the extra tags you may build simple tables of matching entries.
+;; For example the following can auto-update when you select the code-block
+;; and run "C-c C-c":
 ;;
 ;;    #+NAME: get-family-contacts
 ;;    #+BEGIN_SRC elisp :results value table
@@ -87,7 +90,7 @@
 ;;    #+END_SRC
 ;;
 ;; If you prefer to include different columns in your generated table you
-;; can specify them directly:
+;; can specify those directly:
 ;;
 ;;   #+NAME: get-family-contacts
 ;;   #+BEGIN_SRC elisp :results value table
@@ -104,13 +107,14 @@
 ;;
 ;; In this case properties listed in `org-people-ignored-properties` will
 ;; be ignored and excluded from the generated table.
-
+;;
 
 ;;; Version history (brief)
 
 ;;
 ;; 1.9.1 - Removed some unused functions and made the code byte-compile clean
-;;         again.
+;;         again.  Added new test-targets to the Makefile.
+;;         Fixed some comments and documentation.
 ;;
 ;; 1.9  - Any column included in `org-people-summary-properties' which is 100%
 ;;        empty, and not present in any known contact, will be removed.
