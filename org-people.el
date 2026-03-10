@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: 1.9.1
+;; Version: 2.0
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
@@ -111,6 +111,9 @@
 
 ;;; Version history (brief)
 
+;;
+;; 2.0  - Improvements to org-people: link handling.
+;;        Default link description is now the contact name.
 ;;
 ;; 1.9.1 - Removed some unused functions and made the code byte-compile clean
 ;;         again.  Added new test-targets to the Makefile.
@@ -951,17 +954,28 @@ as the `org-people-summary' mode."
     (org-reveal)
     (org-people--open-properties)))
 
+
+(defun org-people-describe-link (link default)
+  "Generate a default description for an org-people: link
+
+The DEFAULT value is used, if specified, otherwise we remove
+the `org-people' prefix from the LINK and use that."
+  (or default
+      (string-remove-prefix "org-people:" link)))
+
 (defun org-people-link-completion ()
   "Return completion candidates for org-people links."
   (let ((name (org-people-select-interactively)))
     ;; Return the full path as Org expects
     (concat "org-people:" name)))
 
+
 (org-link-set-parameters
  "org-people"
- :complete #'org-people-link-completion
- :export   #'org-people--export-person-link
- :follow   #'org-people-browse-name
+ :complete           #'org-people-link-completion
+ :insert-description #'org-people-describe-link
+ :export             #'org-people--export-person-link
+ :follow             #'org-people-browse-name
  :help-echo "Open the contacts-file at the position of the named person, via org-people")
 
 
