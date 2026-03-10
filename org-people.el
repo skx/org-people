@@ -951,9 +951,15 @@ as the `org-people-summary' mode."
     (org-reveal)
     (org-people--open-properties)))
 
+(defun org-people-link-completion ()
+  "Return completion candidates for org-people links."
+  (let ((name (org-people-select-interactively)))
+    ;; Return the full path as Org expects
+    (concat "org-people:" name)))
+
 (org-link-set-parameters
  "org-people"
- :complete #'org-people-select-interactively
+ :complete #'org-people-link-completion
  :export   #'org-people--export-person-link
  :follow   #'org-people-browse-name
  :help-echo "Open the contacts-file at the position of the named person, via org-people")
