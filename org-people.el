@@ -112,6 +112,8 @@
 ;;; Version history (brief)
 
 ;;
+;; 2.1   - "F" allows filtering for contacts for whom a specific property exists.
+;;
 ;; 2.0.1 - When org-people: links are exported to HTML a hyperlink will be added
 ;;         for the person if there is a :WEBSITE property defined.
 ;;
@@ -251,6 +253,7 @@ is invoked by `org-people-insert'.")
     (define-key map (kbd "RET") #'org-people-summary--open)
     (define-key map (kbd "c") #'org-people-summary--copy-field)
     (define-key map (kbd "f") #'org-people-summary--filter-by-property)
+    (define-key map (kbd "F") #'org-people-summary--filter-has-property)
     (define-key map (kbd "R") #'org-people-summary-show-all-columns)
     (define-key map (kbd "s") #'isearch-forward)
     (define-key map (kbd "t") #'org-people-summary--toggle-column)
@@ -888,6 +891,35 @@ toggled interactively.  It will not restore columns which are empty."
                 (mapcar #'org-people-summary--entry filtered))
           (tabulated-list-print t))))))
 
+
+(defun org-people-summary--filter-has-property ()
+  "Filter contacts interactively by the presence of a named property.
+
+This allows you to find all contacts with :EMAIL, for example."
+  (interactive)
+  (let* ((completion-ignore-case t)
+         (completion-styles '(basic substring partial-completion))
+         (prop-str (completing-read
+                    "Property to test for existance: "
+                    (org-people--properties (org-people-parse))
+                    nil t))
+         (prop (intern prop-str)))
+    ;; Filter list
+    (let ((filtered
+           (org-people-filter
+             (lambda (plist)
+               (let ((v (plist-get plist prop)))
+                 (if v
+                     t
+                   nil)))
+             )))
+      ;; Refresh buffer
+      (with-current-buffer org-people-summary-buffer-name
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (setq tabulated-list-entries
+                (mapcar #'org-people-summary--entry filtered))
+          (tabulated-list-print t))))))
 
 
 ;;;###autoload
