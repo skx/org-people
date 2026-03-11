@@ -911,8 +911,7 @@ This allows you to find all contacts with :EMAIL, for example."
                (let ((v (plist-get plist prop)))
                  (if v
                      t
-                   nil)))
-             )))
+                   nil))))))
       ;; Refresh buffer
       (with-current-buffer org-people-summary-buffer-name
         (let ((inhibit-read-only t))
@@ -985,7 +984,7 @@ as the `org-people-summary' mode."
 
 
 (defun org-people-describe-link (link default)
-  "Generate a default description for an org-people: link
+  "Generate a default description for an org-people link.
 
 The DEFAULT value is used, if specified, otherwise we remove
 the `org-people' prefix from the LINK and use that."

@@ -22,7 +22,7 @@
    (let ((table (org-people-parse)))
      (should (hash-table-p table))
      (should (equal (sort (hash-table-keys table) #'string<)
-                    '("Alice Smith" "Bob Jones" "Carol White")))
+                    '("Alice Smith" "Bob Jones" "Carol White" "Steve Kemp")))
      (should (equal (sort (hash-table-keys table) #'string<)
                     (org-people-names)))
      (let ((alice (gethash "Alice Smith" table)))
@@ -290,9 +290,16 @@
 
 (ert-deftest org-people-export-person-link-html-test ()
   "Test HTML export of org-people link."
-  (should (equal
-           (org-people--export-person-link "Alice Smith" nil 'html)
-           "<strong>Alice Smith</strong>")))
+  (org-people--with-mocked-people
+    (let ((plist (org-people-get-by-name "Steve Kemp")))
+       (should (equal (plist-get plist :WEBSITE) "https://steve.fi/")))
+
+    (should (equal
+             (org-people--export-person-link "Alice Smith" nil 'html)
+             "Alice Smith"))
+    (should (equal
+             (org-people--export-person-link "Steve Kemp" nil 'html)
+             "<a href=\"https://steve.fi/\">Steve Kemp</a>"))))
 
 ;; ----------------------------------------------------------------------
 ;; add-descriptions

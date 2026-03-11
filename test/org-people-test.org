@@ -20,11 +20,12 @@ Alice doesn't love [[org-people:Bob Jones]]
 :PROPERTIES:
 :EMAIL: carol@example.com
 :END:
-** Steve Kemp
+** Steve Kemp                                                      :contact:
 :PROPERTIES:
 :COUNTRY:   Finland
 :BIRTHDAY:  <1976-03-10 Wed +1y>
 :EMAIL:     steve@steve.fi
+:WEBSITE:   https://steve.fi/
 :END:
 
 This contact will be ignored as there is no "contact" tag applied to it.
