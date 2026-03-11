@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: 2.0
+;; Version: 2.0.1
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
@@ -111,6 +111,9 @@
 
 ;;; Version history (brief)
 
+;;
+;; 2.0.1 - When org-people: links are exported to HTML a hyperlink will be added
+;;         for the person if there is a :WEBSITE property defined.
 ;;
 ;; 2.0  - Improvements to org-people: link handling.
 ;;        Default link description is now the contact name.
@@ -831,7 +834,7 @@ toggled interactively.  It will not restore columns which are empty."
 
 (defun org-people-summary--copy-field ()
   "Copy the value of the field under point to the clipboard."
- (interactive)
+  (interactive)
   (let* ((entry (tabulated-list-get-entry))
          (columns tabulated-list-format)
          (start 0)
@@ -919,11 +922,16 @@ Filtering can be applied (using a regexp), and fields copied."
   "Export a person link for BACKEND.
 PATH is the person name, DESC is the description.
 
-We just make the name bold."
+For HTML-exports a link will be made to the contact's website
+if a :WEBSITE property is defined, otherwise we just return
+the name."
   (let ((name (or desc path)))
     (cond
      ((eq backend 'html)
-      (format "<strong>%s</strong>" name))
+      (let ((website (plist-get (org-people-get-by-name path) :WEBSITE)))
+        (if website
+            (format "<a href=\"%s\">%s</a>" website name)
+          name)))
      (t
       name))))
 

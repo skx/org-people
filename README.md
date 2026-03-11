@@ -27,7 +27,12 @@ test-cases:
 
 It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other similar properties, however no specific properties are mandatory or expected.  The contact will be recognized providing there is at least one property present, and the "contact" tag is present.  The headline itself is used as the contact name.
 
-The special `:NICKNAME:` property will be used for completion, alongside the person's name, if it is present, but this is optional.
+As mentioned there are no specific properties we mandate, however there are a couple of possible properties
+which get special handling:
+
+* If `:NICKNAME` is present it will be offered a completion-target.
+* If `:WEBSITE` is present it will be used when contact-links are exported to HTML.
+*
 
 
 
@@ -119,8 +124,8 @@ width like so:
 
 ```
 (setq org-people-summary-properties
-   '((:NAME 30
-     (:EMAIL 35))))
+   '((:NAME  :width 30)
+     (:EMAIL :width 35)))
 ```
 
 Now you may add optional configuration to override the column names, the width and even the function which
@@ -152,7 +157,7 @@ A link would look like this:
     * This is a headline
     [[org-people:Steve Kemp]] wrote this package.
 
-When exported to HTML the person name's will be made bold, rather than becoming a link, which is probably what you want.
+When exported to HTML the contact name will be converted to a hyperlink pointing to the user's `:WEBSITE` property, if present, otherwise it will be left unchanged.
 
 The utility function `org-people-add-descriptions` will update all `org-people:` links within the current document to ensure the description matches the link target, which makes the display more readable.
 
