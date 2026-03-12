@@ -235,7 +235,7 @@ and specified here.")
   "*CSV*"
   "This is the name of the buffer which is used for CSV exports.
 
-CSV exports are written according the properties listed in
+CSV exports are written according to the properties listed in
 `org-people-csv-export-properties'.")
 
 (defvar org-people-search-type 'agenda
@@ -509,13 +509,12 @@ VALUE is the string to match with.
 
 By default string-equality is used for matching, however if REGEXP
 is true then `string-match' is used instead."
-  (org-people-filter (lambda(plist)
-                       (let ((found (plist-get plist property)))
-                         (if regexp
-                             (if (string-match value (or found ""))
-                                 t)
-                           (if (string-equal value (or found ""))
-                             t))))))
+ (org-people-filter
+   (lambda (plist)
+     (let ((found (plist-get plist property)))
+       (if regexp
+           (and found (string-match-p value found))
+         (equal value found))))))
 
 (defun org-people-filter (pred-p)
   "Filter all known contacts by the given predicate.
@@ -548,7 +547,7 @@ This function is designed to create an `org-mode' table, like so:
 
 Properties listed in `org-people-ignored-properties' are excluded from
 the generated table."
-  (let* ((plist (org-people-get-by-name name))
+  (let ((plist (org-people-get-by-name name))
          ;; Convert plist to list of (key . value) pairs
          (pairs (seq-partition plist 2))
 
@@ -872,10 +871,10 @@ NAME should be the name of the contact to export."
 
 (defun org-people--all-plists ()
   "Return a list of all contact plists."
-  (cl-loop
-   for plist being the hash-values of (org-people-parse)
-   collect plist))
-
+  (sort (hash-table-values (org-people-parse))
+        (lambda (a b)
+          (string< (or (plist-get a :NAME) "")
+                   (or (plist-get b :NAME) "")))))
 
 (define-derived-mode org-people-summary-mode tabulated-list-mode "Org-People"
   "Major mode for listing Org People contacts."
