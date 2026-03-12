@@ -535,10 +535,16 @@ PRED-P should be a function which accepts the plist of properties associated
 with a given contact, and returns t if they should be kept.
 
 See `org-people-get-by-property' for an example use of this function."
-  (cl-loop
-   for plist being the hash-values of (org-people-parse)
-   when (funcall pred-p plist)
-   collect plist))
+ (let (results)
+    (maphash
+     (lambda (key plist)
+       (when (funcall pred-p plist)
+         (push (cons key plist) results)))
+     (org-people-parse))
+    (mapcar #'cdr
+            (sort results
+                  (lambda (a b)
+                    (string< (car a) (car b)))))))
 
 
 
