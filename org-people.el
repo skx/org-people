@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: 2.0.1
+;; Version: 2.2
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
@@ -126,6 +126,9 @@
 
 ;;; Version history (brief)
 
+;;
+;; 2.2  - Allow marking/unmarking people in the summary buffer.
+;;        Marked users can be exported en masse to vCARD or CSV.
 ;;
 ;; 2.1   - "F" allows filtering for contacts for whom a specific property exists.
 ;;
