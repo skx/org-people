@@ -547,7 +547,7 @@ This function is designed to create an `org-mode' table, like so:
 
 Properties listed in `org-people-ignored-properties' are excluded from
 the generated table."
-  (let ((plist (org-people-get-by-name name))
+  (let* ((plist (org-people-get-by-name name))
          ;; Convert plist to list of (key . value) pairs
          (pairs (seq-partition plist 2))
 
