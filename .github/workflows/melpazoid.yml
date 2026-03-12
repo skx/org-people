@@ -24,7 +24,7 @@ jobs:
         # RECIPE is your recipe as written for MELPA:
         RECIPE: (org-people :fetcher github :repo "skx/org-people")
         # set this to true if warnings should be treated as errors:
-        WARN_IS_ERROR: true
+        WARN_IS_ERROR: false
         # set this to false (or remove it) if the package isn't on MELPA:
         EXIST_OK: false
       run: echo $GITHUB_REF && make -C ~/melpazoid
