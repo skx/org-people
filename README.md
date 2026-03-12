@@ -25,13 +25,15 @@ test-cases:
   :END
 ```
 
-It is assumed that you'll have "ADDRESS", "EMAIL", "PHONE", and other similar properties, however no specific properties are mandatory or expected.  Any contacts will be recognized providing there is at least one property present along with the "contact" tag - the headline itself is used as the contact name.
+It is assumed that you'll have "`ADDRESS`", "`EMAIL`", "`PHONE`", and other similar properties, however there are no mandatory properties - you add what you prefer.  Any contacts will be recognized providing they contain at least one property, along with the necessary "contact" tag to identify them.  (The headline itself is used as the contact name.)
 
 As mentioned there are no specific properties we mandate, however there are a couple of possible properties
 which get special handling:
 
 * If `:NICKNAME` is present it will be offered a completion-target.
 * If `:WEBSITE` is present it will be used when contact-links are exported to HTML.
+
+It should probably be noted that the summary table, and the CSV/vCARD exportors, will default to using the `ADDRESS`, `EMAIL`, and `PHONE` properties as their main input - but this is configurable.
 
 
 
@@ -88,7 +90,7 @@ These are the main user-focused functions within the package to work with contac
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a summary of their details.
   * This uses `tabulated-list-mode` and is documented further below.
-    * But in brief you can mark, filter, and adjust columns pretty flexibly.
+    * But in brief you can mark, filter, and adjust columns and their contents pretty flexibly.
 * `org-people-tags-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
 * `org-people-person-to-table`
@@ -178,11 +180,13 @@ In this case properties listed in `org-people-ignored-properties` will be ignore
 
 The `org-people-summary` function shows a table of all your known contacts.
 
-You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, which defaults to showing the name, email, phone-number and tags associated with each entry.
+You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, as noted earlier in this documentation.  The default setting is to show the name, email, phone-number and tags associated with each entry.
 
-If a given column would be 100% empty (i.e. no known contacts have a property with that name) then the column will be removed from display.
+> **NOTE**: If a given column would be 100% empty (i.e. no known contacts have a property with that name) then the column will be removed from display.
 
-Some keybindings are setup in the `org-people-summary-mode-map`, everything will be visible if you press `?`:
+Some keybindings are setup in the `org-people-summary-mode-map`, everything will be visible if you press `?`.
+
+In brief though:
 
 * `RET` jump to the definition of the contact.
 * `c` Copy the field under the point.
@@ -201,7 +205,7 @@ People may be marked with `m` (the current row), or `M` (all rows), and unmarked
 
 ### Coding Summary Additions
 
-We've provided the `org-people-summary-marked-or-current` function to allow you to easily define your own custom routines that can operate either on:
+The `org-people-summary-marked-or-current` function to allow you to easily define your own custom routines that can operate either on:
 
 * The contact on the row containing the point.
 * The arbitrary number of marked people.
