@@ -397,8 +397,6 @@ excluded from the completion."
 
 
 
-
-
 ;;
 ;; Filtering and searching functions that build upon the data-structure
 ;; which org-people-parse returns.
@@ -1049,30 +1047,38 @@ of the entries is specified by `org-people-csv-export-properties'."
          (prop-str (completing-read
                     "Property to filter against: "
                     (org-people--properties (org-people-parse))
-                    nil t))
-         (prop (intern prop-str))
-         (value (read-string (format "Value to match for %s: " prop-str))))
-    ;; Filter list
-    (let ((filtered
-           (org-people-filter
-             (lambda (plist)
-               (let ((v (plist-get plist prop)))
-                 (cond
-                  ((listp v)
-                   (seq-some (lambda (item)
-                               (and (stringp item)
-                                    (string-match-p value item)))
-                             v))
-                  ((stringp v)
-                   (string-match-p value v))
-                  (t nil)))))))
-      ;; Refresh buffer
-      (with-current-buffer org-people-summary-buffer-name
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (setq tabulated-list-entries
-                (mapcar #'org-people-summary--entry filtered))
-          (tabulated-list-print t))))))
+                    nil t)))
+
+    (when (string-empty-p prop-str)
+      (user-error "No property provided!"))
+
+    (let* ((prop (intern prop-str))
+           (value (read-string (format "Value to match for %s: " prop-str))))
+
+      (when (string-empty-p value)
+        (user-error "No value provided"))
+      ;; Filter list
+      (let ((filtered
+             (org-people-filter
+              (lambda (plist)
+                (let ((v (plist-get plist prop)))
+                  (cond
+                   ((listp v)
+                    (seq-some (lambda (item)
+                                (and (stringp item)
+                                     (string-match-p value item)))
+                              v))
+                   ((stringp v)
+                    (string-match-p value v))
+                   (t nil)))))))
+
+        ;; Refresh buffer
+        (with-current-buffer org-people-summary-buffer-name
+          (let ((inhibit-read-only t))
+            (erase-buffer)
+            (setq tabulated-list-entries
+                  (mapcar #'org-people-summary--entry filtered))
+            (tabulated-list-print t)))))))
 
 
 (defun org-people-summary--filter-has-property ()
@@ -1083,18 +1089,22 @@ This allows you to find all contacts with :EMAIL, for example."
   (let* ((completion-ignore-case t)
          (completion-styles '(basic substring partial-completion))
          (prop-str (completing-read
-                    "Property to test for existance: "
+                    "Property to test for existence: "
                     (org-people--properties (org-people-parse))
                     nil t))
          (prop (intern prop-str)))
+
+    (when (string-empty-p prop-str)
+      (user-error "No property provided!"))
+
     ;; Filter list
     (let ((filtered
            (org-people-filter
-             (lambda (plist)
-               (let ((v (plist-get plist prop)))
-                 (if v
-                     t
-                   nil))))))
+            (lambda (plist)
+              (let ((v (plist-get plist prop)))
+                (if v
+                    t
+                  nil))))))
       ;; Refresh buffer
       (with-current-buffer org-people-summary-buffer-name
         (let ((inhibit-read-only t))
