@@ -74,7 +74,7 @@
 ;; Test struct parsing
 ;; ----------------------------------------------------------------------
 (ert-deftest org-people-summary--make-column ()
-  "Test we parse the legacy structures correctly"
+  "Test we parse the legacy structures correctly."
   (let ((a '(:NAME :title "Steve" :width 21))
         (b '(:NAME 29)))
     (should (equal (org-people-column-title (org-people-summary--make-column a)) "Steve"))
