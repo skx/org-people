@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: 2.2
+;; Version: $Id$
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
@@ -919,7 +919,7 @@ NAME should be the name of the contact to export."
       (user-error "No contact found: %s" name))
     (org-people-browse-name name)))
 
-(defun org-people-summary--mark-all()
+(defun org-people-summary--mark-all ()
   "Mark all rows in the visible list."
   (interactive)
   (save-excursion
@@ -928,17 +928,17 @@ NAME should be the name of the contact to export."
       (when (tabulated-list-get-id)
         (tabulated-list-put-tag "*" t)))))
 
-(defun org-people-summary--mark-row()
+(defun org-people-summary--mark-row ()
   "Add a mark to the current row."
   (interactive)
   (tabulated-list-put-tag "*" t))
 
-(defun org-people-summary--unmark-row()
+(defun org-people-summary--unmark-row ()
   "Remove the mark from the current row."
   (interactive)
   (tabulated-list-put-tag " " t))
 
-(defun org-people-summary--unmark-all()
+(defun org-people-summary--unmark-all ()
   "Remove any mark listed again rows."
   (interactive)
   (tabulated-list-clear-all-tags))
