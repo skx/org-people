@@ -116,10 +116,12 @@
 ;;
 ;; Using that facility you can write code that operates on either the
 ;; people who are currently marked, or if none then the person upon
-;; the current row.
+;; the current row.  See `org-people-summary-marked-or-current' for
+;; a useful helper to simplify that.
 ;;
-;; Currently the only in-built user of the marking facility is the
-;; export-to-vcard facility bound to 'v' by default.
+;; Currently the only user of the marking functionality are the two
+;; export routines we have (vCARD and CSV).
+;;
 
 
 ;;; Version history (brief)
@@ -222,22 +224,6 @@
 (defvar org-people-search-tag "contact"
   "This is the tag-filter for finding contacts.")
 
-(defvar org-people-vcard-buffer-name
-  "*VCARD*"
-  "This is the name of the buffer which is used for vCard exports.
-
-In previous releases a buffer was created based upon the name of
-single contacts, however now it is possible to mark and export
-multiple people in a single operation so the name has to be agnostic,
-and specified here.")
-
-(defvar org-people-csv-buffer-name
-  "*CSV*"
-  "This is the name of the buffer which is used for CSV exports.
-
-CSV exports are written according to the properties listed in
-`org-people-csv-export-properties'.")
-
 (defvar org-people-search-type 'agenda
   "The filter which is used for finding entries, via `org-map-entries'.
 
@@ -250,9 +236,32 @@ for contacts.")
   "*Contacts*"
   "The name of the buffer to create when `org-people-summary' is invoked.")
 
+(defvar org-people-vcard-buffer-name
+  "*VCARD*"
+  "This is the name of the buffer which is used for vCARD exports.
+
+In previous releases a buffer was created based upon the name of
+single contacts, however now it is possible to mark and export
+multiple people in a single operation so the name has to be
+person-agnostic, and we specify what to use here.")
+
+(defvar org-people-csv-buffer-name
+  "*CSV*"
+  "This is the name of the buffer which is used for CSV exports.
+
+CSV exports are written according to the properties listed in
+`org-people-csv-export-properties'.")
+
 (defvar org-people-csv-export-properties
   '(:NAME :EMAIL :PHONE)
-  "A list of properties to export when performing a CVS export.")
+  "A list of the properties to export to CVS.
+
+The export will contain a header if `org-people-csv-header' is set
+to a non-nil value.")
+
+(defvar org-people-csv-header
+  t
+  "Should a header be included in the CSV export?")
 
 (defvar org-people-summary-properties
   '((:NAME  :width 30)
@@ -304,7 +313,8 @@ is invoked by `org-people-insert'.")
     (define-key map (kbd "U") #'org-people-summary--unmark-all)
 
     ;; Operating on marked rows, or the current row if nothing marked.
-    (define-key map (kbd "v") #'org-people-summary--vcard)
+    (define-key map (kbd "v") #'org-people-summary--vcard) ;; depreciated
+    (define-key map (kbd "V") #'org-people-summary--vcard)
     (define-key map (kbd "C") #'org-people-summary--csv)
 
     map)
@@ -802,7 +812,7 @@ fields to be exported are specified by `org-people-csv-export-properties'."
       (insert
        (mapconcat
         (lambda (p)
-           (org-people--csv-escape (plist-get plist p)))
+          (org-people--csv-escape (plist-get plist p)))
         org-people-csv-export-properties
         ", ")
         "\n"))))
@@ -966,7 +976,7 @@ the buffer which should receive the results."
      (org-people-export-to-vcard name)))
 
   ;; show the result
-  (pop-to-buffer (get-buffer-create  org-people-vcard-buffer-name)))
+  (pop-to-buffer (get-buffer-create org-people-vcard-buffer-name)))
 
 (defun org-people-summary--csv ()
   "Create a CSV export for the current, or marked, people.
@@ -985,15 +995,16 @@ of the entries is specified by `org-people-csv-export-properties'."
     (erase-buffer)
 
     ;; Insert the header into the buffer
-    (insert
-     (mapconcat
-      (lambda (p)
-        (capitalize
-         (replace-regexp-in-string "_" " "
-                                   (substring (symbol-name p) 1))))
-      org-people-csv-export-properties
-      ", ")
-     "\n"))
+    (if org-people-csv-header
+        (insert
+         (mapconcat
+          (lambda (p)
+            (capitalize
+             (replace-regexp-in-string "_" " "
+                                       (substring (symbol-name p) 1))))
+          org-people-csv-export-properties
+          ", ")
+         "\n")))
 
   ;; export the people
   (org-people-summary-marked-or-current
@@ -1001,7 +1012,7 @@ of the entries is specified by `org-people-csv-export-properties'."
      (org-people-export-to-csv name)))
 
   ;; show the result
-  (pop-to-buffer (get-buffer-create  org-people-csv-buffer-name)))
+  (pop-to-buffer (get-buffer-create org-people-csv-buffer-name)))
 
 (defun org-people-summary--copy-field ()
   "Copy the value of the field under point to the clipboard."
