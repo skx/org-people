@@ -9,7 +9,7 @@ test-cases:
 
 ```
 * People
-  ** Alice                        :family:contact:
+  ** Alice                           :family:contact:
   :PROPERTIES
   :ADDRESS: 32 Something Street
   :EMAIL: alice@example.com
@@ -25,14 +25,13 @@ test-cases:
   :END
 ```
 
-It is assumed that you'll have "ADDRESS", "EMAIL", and "PHONE" other similar properties, however no specific properties are mandatory or expected.  The contact will be recognized providing there is at least one property present, and the "contact" tag is present.  The headline itself is used as the contact name.
+It is assumed that you'll have "ADDRESS", "EMAIL", "PHONE", and other similar properties, however no specific properties are mandatory or expected.  Any contacts will be recognized providing there is at least one property present along with the "contact" tag - the headline itself is used as the contact name.
 
 As mentioned there are no specific properties we mandate, however there are a couple of possible properties
 which get special handling:
 
 * If `:NICKNAME` is present it will be offered a completion-target.
 * If `:WEBSITE` is present it will be used when contact-links are exported to HTML.
-*
 
 
 
@@ -98,45 +97,41 @@ These are the main user-focused functions within the package to work with contac
 * `org-people-person-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
 
+We've provided the helpful `org-people-summary-marked-or-current` function to allow you to easily define your own custom routines that can operate either on:
 
-There are also functions for working with the parsed contacts:
+* The contact on the row containing the point.
+* The arbitrary number of marked people.
+  * Marks being set with `m`/`M` and cleared with `u`/`U`.
 
-* `org-people-parse`
-  * Parse all known contacts and return a hash of them.
-  * The key is the person's name, the values is a plist of all known properties.
-* `org-people-select-interactively`
-  * Prompt the user for a contact name, and return the known data about that contact.
-* `org-people-get-by-name`
-  * Get data about a contact, by name.
-* `org-people-filter`
-  * Find matching contacts via arbitrary filter/predicate.
+This is a brief example:
+
+```
+    (defun show-marked-users ()
+      "Proof of concept to show how names of marked people."
+      (interactive)
+      (org-people-summary-marked-or-current
+         (lambda (name) (message "called with person: %s" name))))
+
+    (define-key org-people-summary-mode-map (kbd "x") #'show-marked-users)
+
+```
 
 
 
 ## Configuration
 
-No special configuration is required, although if you wish to use a different tag to identify the contacts you may specify that via `org-people-search-tag`.
+No special configuration is required, although if you wish to use a different tag to identify the contacts you may specify that via `org-people-search-tag`.  Similarly many of the default operations may be updated via the appropriate configuration values, and these are documented within the package itself.
 
-If you wished to limit parsing to only a single named file you could set `org-people-search-type` to be a list containing the name(s) of files to process, otherwise all agenda files will be read.
+If you wished to limit parsing to only named file(s) you could set `org-people-search-type` to be a list containing the path(s) to process.  Otherwise all agenda-files will be read.
 
-Finally the configuration of the columns has been expanded, in the past we allowed setting the name and column
-width like so:
-
-```
-(setq org-people-summary-properties
-   '((:NAME  :width 30)
-     (:EMAIL :width 35)))
-```
-
-Now you may add optional configuration to override the column names, the width and even the function which
-populates the value.  This allows you to create dynamic values.  For example see the last item here:
+The configuration of the columns, within the `org-people-summary` view, has been expanded in recent releases.  Rather than only allowing a name/width to be specified you may now add optional configuration to override the column names, the width and even the function which populates the value.  This allows you to create dynamic values.  For example see the last two items here:
 
 ```
 (setq org-people-summary-properties
       '((:NAME  :width 25)
         (:EMAIL :width 30)
-        (:PHONE :width 15 :title "Digits")
         :TAGS
+        (:PHONE :width 15 :title "Digits")
         (:MEOW  :getter (lambda (plist) (concat (plist-get plist :COUNTRY) " [" (plist-get plist :FLAG) "]" )))))
 ```
 
@@ -207,8 +202,7 @@ The `org-people-summary` function shows a table of all your known contacts.
 
 You can customize the displayed fields, or their order, by modifying the `org-people-summary-properties` variable, which defaults to showing the name, email, phone-number and tags associated with each entry.
 
-If a given column would be 100% empty (i.e. no known contacts have a property
-with that name) then the column will be removed from display.
+If a given column would be 100% empty (i.e. no known contacts have a property with that name) then the column will be removed from display.
 
 Some keybindings are setup in the `org-people-summary-mode-map`:
 
@@ -221,7 +215,10 @@ Some keybindings are setup in the `org-people-summary-mode-map`:
 * `s` Initiate a search forward, via `isearch-forward`.
 * `t` Toggle visibility of a named column.
 * `T` Hide the current column.
-* `v` - Export the contact to a VCF file.
+* `v` - Export the current contact, or all marked contacts, to vCARD format.
+* `C` - Export the current contact, or all marked contacts, to CSV.
+
+People may be marked with `m` (the current row), or `M` (all rows), and unmarked with `u` (current row), or `U` (all rows), and you can then write code that operates upon the marked entries using `org-people-summary-marked-or-current` - currently the exporter functions are the only ones which operate specially upon marked rows.
 
 Press `?` to see all bindings within the mode-map.
 

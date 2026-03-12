@@ -4,6 +4,8 @@
 (require 'org)
 (require 'org-people)
 
+;;; Code:
+
 (defmacro org-people--with-mocked-people (&rest body)
   "Run BODY with org-people reading from a fixed org file."
   `(let ((org-people-search-type (list "org-people-test.org")))
@@ -17,7 +19,7 @@
 ;; ----------------------------------------------------------------------
 
 (ert-deftest org-people-parse-test ()
-  "Test that org-people-parse correctly parses entries."
+  "Test that `org-people-parse' correctly parses entries."
   (org-people--with-mocked-people
    (let ((table (org-people-parse)))
      (should (hash-table-p table))
@@ -35,7 +37,7 @@
 ;; ----------------------------------------------------------------------
 
 (ert-deftest org-people-get-by-name-test ()
-  "Test org-people-get-by-name returns correct plist."
+  "Test `org-people-get-by-name' returns correct plist."
   (org-people--with-mocked-people
    (let ((alice (org-people-get-by-name "Alice Smith")))
      (should (equal (plist-get alice :EMAIL) "alice@example.com"))
@@ -47,7 +49,7 @@
 ;; ----------------------------------------------------------------------
 
 (ert-deftest org-people-person-to-table-test ()
-  "Test org-people-person-to-table generates expected table."
+  "Test `org-people-person-to-table' generates expected table."
   (org-people--with-mocked-people
    (let ((rows (org-people-person-to-table "Bob Jones")))
      (should (equal (mapcar #'car rows)
@@ -73,7 +75,7 @@
 ;; ----------------------------------------------------------------------
 
 (ert-deftest org-people-tags-to-table-test ()
-  "Test org-people-tags-to-table returns correct filtered table."
+  "Test `org-people-tags-to-table' returns correct filtered table."
   (org-people--with-mocked-people
    (let ((table (org-people-tags-to-table "work" '(:NAME :EMAIL))))
      (should (equal (car table) '(:NAME :EMAIL)))
@@ -87,7 +89,7 @@
 ;; ----------------------------------------------------------------------
 
 (ert-deftest org-people-get-by-property-regexp-test ()
-  "Test org-people-get-by-property with regexp."
+  "Test `org-people-get-by-property' with regexp."
   (org-people--with-mocked-people
    (let ((results (org-people-get-by-property :EMAIL ".....@example.com" t)))
      (should (listp results))
@@ -96,7 +98,7 @@
                     '("Alice Smith" "Carol White"))))))
 
 (ert-deftest org-people-get-by-property-literal-test ()
-  "Test org-people-get-by-property literal match."
+  "Test `org-people-get-by-property' literal match."
   (org-people--with-mocked-people
    (let ((results (org-people-get-by-property :EMAIL "bob@example.com")))
      (should (listp results))
@@ -321,16 +323,50 @@
 (ert-deftest org-people-export-to-vcard-test ()
   "Test vCard buffer creation and contents."
   (org-people--with-mocked-people
-   (let ((plist (org-people-get-by-name "Alice Smith")))
-     (org-people-export-to-vcard plist)
-     (let ((buf (get-file-buffer "Alice_Smith.vcf")))
-       (should buf)
-       (with-current-buffer buf
-         (goto-char (point-min))
-         (should (search-forward "BEGIN:VCARD" nil t))
-         (should (search-forward "FN:Alice Smith" nil t))
-         (should (search-forward "EMAIL;TYPE=INTERNET:alice@example.com" nil t))
-         (set-buffer-modified-p nil))))))
+   (org-people-export-to-vcard "Alice Smith")
+   (let ((buf (get-buffer-create org-people-vcard-buffer-name)))
+     (should buf)
+     (with-current-buffer buf
+       (goto-char (point-min))
+       (should (search-forward "BEGIN:VCARD" nil t))
+       (should (search-forward "FN:Alice Smith" nil t))
+       (should (search-forward "EMAIL;TYPE=INTERNET:alice@example.com" nil t))
+       (set-buffer-modified-p nil)))))
+
+;; ----------------------------------------------------------------------
+;; CSV export
+;; ----------------------------------------------------------------------
+
+(ert-deftest org-people-export-to-csv-test ()
+  "Test CSV buffer creation and contents."
+  (org-people--with-mocked-people
+   ;; bob is fine
+   (org-people-export-to-csv "Bob Jones")
+   (let ((buf (get-buffer-create org-people-csv-buffer-name)))
+     (should buf)
+     (with-current-buffer buf
+       (goto-char (point-min))
+       (should (search-forward "\"Bob Jones\", " nil t))
+       (goto-char (point-min))
+       (should (search-forward "\"bob@example.com\", " nil t))
+       (set-buffer-modified-p nil)))
+   ;; carol has no phone
+   (org-people-export-to-csv "Carol White")
+   (let ((buf (get-buffer-create org-people-csv-buffer-name)))
+     (should buf)
+     (with-current-buffer buf
+       (goto-char (point-min))
+       (should (search-forward "\"Carol White\", " nil t))
+       (goto-char (point-min))
+       (should (search-forward "\"carol@example.com\"," nil t))
+       (goto-char (point-min))
+       (should (search-forward ", \"\"" nil t)) ; empty phone number is ""
+       (set-buffer-modified-p nil))))
+  ;; CSV escaping
+  (should (equal "\"Steve\"" (org-people--csv-escape "Steve")))
+  (should (equal "\"Quote \"\" Name\"" (org-people--csv-escape "Quote \" Name")))
+  )
+
 
 ;; ----------------------------------------------------------------------
 ;; Run tests
