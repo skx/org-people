@@ -87,34 +87,12 @@ These are the main user-focused functions within the package to work with contac
   * Insert contact-data, via interactive prompts (with `completing-read`).
 * `org-people-summary`
   * Parse all known contacts and pop to a buffer containing a summary of their details.
-  * This uses `tabulated-list-mode` and allows you run a few different actions
-    * Sort by the available fields.
-    * Copy fields to the clipboard.
-    * Export single contacts to VCF format.
-    * Filter the view by property values.
+  * This uses `tabulated-list-mode` and is documented further below.
+    * But in brief you can mark, filter, and adjust columns pretty flexibly.
 * `org-people-tags-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
 * `org-people-person-to-table`
   * Designed to create auto-updating tables inside `org-mode` documents.
-
-We've provided the helpful `org-people-summary-marked-or-current` function to allow you to easily define your own custom routines that can operate either on:
-
-* The contact on the row containing the point.
-* The arbitrary number of marked people.
-  * Marks being set with `m`/`M` and cleared with `u`/`U`.
-
-This is a brief example:
-
-```
-    (defun show-marked-users ()
-      "Proof of concept to show how names of marked people."
-      (interactive)
-      (org-people-summary-marked-or-current
-         (lambda (name) (message "called with person: %s" name))))
-
-    (define-key org-people-summary-mode-map (kbd "x") #'show-marked-users)
-
-```
 
 
 
@@ -145,9 +123,9 @@ If you have two contacts with the same name one will overwrite the other.  This 
 
 ## org-mode links
 
-This package defines a link-handler for the `org-people:` protocol, which will to the definition of the given contact when clicked.   You can add such a link via `C-c C-l`, as expected, and you'll find TAB completion works for populating the protocol-name and the contact's name.
+This package defines a custom `org-mode` link-type for the `org-people:` protocol, which will jump to the definition of the given contact when clicked/followed.   You can add such a link via `C-c C-l`, as expected, and you'll find TAB completion works for populating the protocol-name, and the person's name.  The description will default to their name too.
 
-A link would look like this:
+A link might look like this for example:
 
     * This is a headline
     [[org-people:Steve Kemp]] wrote this package.
@@ -204,7 +182,7 @@ You can customize the displayed fields, or their order, by modifying the `org-pe
 
 If a given column would be 100% empty (i.e. no known contacts have a property with that name) then the column will be removed from display.
 
-Some keybindings are setup in the `org-people-summary-mode-map`:
+Some keybindings are setup in the `org-people-summary-mode-map`, everything will be visible if you press `?`:
 
 * `RET` jump to the definition of the contact.
 * `c` Copy the field under the point.
@@ -218,9 +196,28 @@ Some keybindings are setup in the `org-people-summary-mode-map`:
 * `v` - Export the current contact, or all marked contacts, to vCARD format.
 * `C` - Export the current contact, or all marked contacts, to CSV.
 
-People may be marked with `m` (the current row), or `M` (all rows), and unmarked with `u` (current row), or `U` (all rows), and you can then write code that operates upon the marked entries using `org-people-summary-marked-or-current` - currently the exporter functions are the only ones which operate specially upon marked rows.
+People may be marked with `m` (the current row), or `M` (all rows), and unmarked with `u` (current row), or `U` (all rows).  As of today only the exporting functions (vCARD and CSV) use the marked-rows, but you can add extensions and perhaps additional functionality will be added in the future.
 
-Press `?` to see all bindings within the mode-map.
+
+### Coding Summary Additions
+
+We've provided the `org-people-summary-marked-or-current` function to allow you to easily define your own custom routines that can operate either on:
+
+* The contact on the row containing the point.
+* The arbitrary number of marked people.
+  * Marks being set with `m`/`M` and cleared with `u`/`U`.
+
+This is a brief example:
+
+    (defun show-marked-users ()
+      "Proof of concept to show the names of marked people.
+    If no people are marked show the name of the person in the row
+    containing the point."
+      (interactive)
+      (org-people-summary-marked-or-current
+         (lambda (name) (message "called with person: %s" name))))
+
+    (define-key org-people-summary-mode-map (kbd "x") #'show-marked-users)
 
 
 
