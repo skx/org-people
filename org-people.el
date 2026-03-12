@@ -506,9 +506,10 @@ not used directly."
 ;;
 
 (defun org-people-get-by-name (name)
-  "Return plist for NAME from the contact-file.
+  "Return plist for NAME from known people.
 
-This is basically the way of getting all data known about a given person."
+This method is used throughout the code as a means of getting all
+of the properties associated with a specific individual."
   (gethash name (org-people-parse)))
 
 (defun org-people-get-by-property (property value &optional regexp)
@@ -517,7 +518,7 @@ This is basically the way of getting all data known about a given person."
 PROPERTY is the name of the property associated with entries, and
 VALUE is the string to match with.
 
-By default string-equality is used for matching, however if REGEXP
+By default `string-equality' is used for matching, however if REGEXP
 is true then `string-match' is used instead."
  (org-people-filter
    (lambda (plist)

@@ -71,6 +71,19 @@
              (should (equal val (plist-get plist :TAGS)))))))))))
 
 ;; ----------------------------------------------------------------------
+;; Test struct parsing
+;; ----------------------------------------------------------------------
+(ert-deftest org-people-summary--make-column ()
+  "Test we parse the legacy structures correctly"
+  (let ((a '(:NAME :title "Steve" :width 21))
+        (b '(:NAME 29)))
+    (should (equal (org-people-column-title (org-people-summary--make-column a)) "Steve"))
+    (should (equal (org-people-column-title (org-people-summary--make-column b)) "Name"))
+    (should (equal (org-people-column-width (org-people-summary--make-column a)) 21))
+    (should (equal (org-people-column-width (org-people-summary--make-column b)) 29))
+    ))
+
+;; ----------------------------------------------------------------------
 ;; Test tags-to-table
 ;; ----------------------------------------------------------------------
 
