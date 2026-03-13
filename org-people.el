@@ -123,6 +123,26 @@
 ;; export routines we have (vCARD and CSV).
 ;;
 
+;;; complete-at-point
+
+;; There are a pair of functions provided for the complete-at-point
+;; functionality - one for names and one for email addresses.  They
+;; might be enabled like so:
+;;
+;;  (add-hook 'message-mode-hook
+;;          (lambda ()
+;;                  (add-hook 'completion-at-point-functions
+;;                      #'org-people-email-capf
+;;                      nil t)))
+;;
+;;  (add-hook 'text-mode-hook
+;;          (lambda ()
+;;            (add-hook 'completion-at-point-functions
+;;                      #'org-people-capf
+;;                      nil t)))
+;;
+;;
+
 
 ;;; Version history (brief)
 
@@ -500,7 +520,48 @@ not used directly."
     (gethash completion alias-table)))
 
 
+(defun org-people-email-candidates ()
+  "Provide candidates for completion via capf."
+  (let (cands)
+    (maphash
+     (lambda (name plist)
+       (let ((email (plist-get plist :EMAIL)))
+         (when email
+           (push (format "%s <%s>" name email) cands))))
+     (org-people-parse))
+    cands))
 
+(defun org-people--bounds ()
+  "Provide bounding-area for candidates for completion via capf.
+
+We do this because otherwise completing against names might fail
+if the point were at the start of a surname - as the forename
+would not match a symbol, instead showing up as the previous
+word."
+  (save-excursion
+    (let ((end (point)))
+      (skip-chars-backward "[:alnum:] ._-")
+      (cons (point) end))))
+
+(defun org-people-capf ()
+  "Completion-at-point for org-people contacts."
+  (let ((bounds (org-people--bounds)))
+    (when bounds
+      (list
+       (car bounds)
+       (cdr bounds)
+       (org-people-names)
+       :annotation-function #'org-people--completion-annotation
+       :company-kind (lambda (_) 'user)))))
+
+(defun org-people-email-capf ()
+  "Completion-at-point for org-people email addresses."
+  (let ((bounds (org-people--bounds)))
+    (when bounds
+      (list
+       (car bounds)
+       (cdr bounds)
+       (org-people-email-candidates)))))
 
 ;;
 ;; Selection code

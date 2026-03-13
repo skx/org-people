@@ -138,6 +138,31 @@ The utility function `org-people-add-descriptions` will update all `org-people:`
 
 
 
+## Completion Functions
+
+There are a pair of functions provided for the complete-at-point functionality:
+
+* `org-people-capf`
+  * Complete contact names.  (e.g. `Alice Smith`)
+* `org-people-email-capf`
+  * Complete contact emails. (e.g. `"Mallory Jones" <foo@bar.com>"`).
+
+They might be enabled like so using the standard `capf`:
+
+    (add-hook 'message-mode-hook
+          (lambda ()
+            (add-hook 'completion-at-point-functions
+                      #'org-people-email-capf
+                      nil t)))
+
+    (add-hook 'text-mode-hook
+          (lambda ()
+            (add-hook 'completion-at-point-functions
+                      #'org-people-capf
+                      nil t)))
+
+
+
 ## Dynamic `org-mode` tables
 
 If you tag the contacts with more than just the `contacts` value then you may use those tags to build simple tables of matching entries.  For example the following can auto-update:
