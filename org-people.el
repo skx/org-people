@@ -1122,19 +1122,7 @@ of the entries is specified by `org-people-csv-export-properties'."
   "Copy the value of the field under point to the clipboard."
   (interactive)
   (let* ((entry (tabulated-list-get-entry))
-         (columns tabulated-list-format)
-         (start 0)
-         col)
-    ;; Determine which column the point is in
-    (catch 'found
-      (dotimes (i (length columns))
-        (let* ((col-info (if (vectorp columns) (aref columns i) (nth i columns)))
-               (width (if (vectorp col-info) (aref col-info 1) (nth 1 col-info))))
-          (when (<= start (current-column) (+ start width))
-            (setq col i)
-            (throw 'found t))
-          (setq start (+ start width)))))
-    ;; Copy value if found
+         (col   (org-people-summary--column-at-point)))
     (if (and entry col)
         (let ((value (aref entry col)))  ;; entry is always a vector
           (kill-new value)
