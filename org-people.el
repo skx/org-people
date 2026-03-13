@@ -119,6 +119,10 @@
 ;; the current row.  See `org-people-summary-marked-or-current' for
 ;; a useful helper to simplify that.
 ;;
+;; A similar helper `org-people-get-property-marked-or-current' allows
+;; fetching the values of a given property for each marked contact,
+;; or the person upon the current row if nothing is marked.
+;;
 ;; Currently the only user of the marking functionality are the two
 ;; export routines we have (vCARD and CSV).
 ;;
@@ -339,7 +343,8 @@ is invoked by `org-people-insert'.")
     (define-key map (kbd "v") #'org-people-summary--vcard) ;; depreciated
     (define-key map (kbd "V") #'org-people-summary--vcard)
     (define-key map (kbd "C") #'org-people-summary--csv)
-
+    (define-key map (kbd "w") #'org-people-summary--open-website)
+    (define-key map (kbd "e") #'org-people-summary--compose-mail)
     map)
   "Keymap for `org-people-summary-mode'.")
 
@@ -1023,6 +1028,36 @@ how this might be used."
     (if (zerop count)
         (funcall function (tabulated-list-get-id)))
     count))
+
+(defun org-people-get-property-marked-or-current (property)
+  "Return the value of the given property.
+
+Return the value of the given PROPERTY from all marked people,
+if no people are marked operate upon the person on the current
+row."
+  (let ((values nil))
+    (org-people-summary-marked-or-current
+     (lambda (person)
+       (let ((website (plist-get (org-people-get-by-name person) property)))
+         (if website
+             (add-to-list 'values website)))))
+    values))
+
+(defun org-people-summary--open-website ()
+  "Open the website for the given person, or marked people."
+  (interactive)
+  (let ((urls (org-people-get-property-marked-or-current :WEBSITE)))
+    (if urls
+        (mapcar #'browse-url urls)
+      (user-error "No :WEBSITE property found"))))
+
+(defun org-people-summary--compose-mail ()
+  "Compose email to the given person, or marked people."
+  (interactive)
+  (let ((vals (org-people-get-property-marked-or-current :EMAIL)))
+    (if vals
+        (mapcar #'compose-mail vals)
+      (user-error "No :EMAIL property found"))))
 
 (defun org-people-summary--vcard ()
   "Create a VCARD export for the current, or marked, people.
