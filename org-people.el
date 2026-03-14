@@ -1,6 +1,6 @@
 ;;; org-people.el --- Work with a contact-list in org-mode files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026  Steve Kemp
+;; Copyright (C) 2026 Steve Kemp
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
@@ -69,10 +69,12 @@
 ;; your contacts with helpful TAB-completion, on both the name of the
 ;; contact and the attribute name to be inserted.
 ;;
-;; If you have links to people within your document (e.g. a link
-;; such as [[org-people:Steve Kemp]] you can use the helper
-;; `org-people-add-descriptions' to automatically add the contact
-;; description automatically.  This makes them look cleaner.
+;; We provide a new link-type `org-people:' which allows you to jump
+;; to a contact's definition when followed.   If you have such links
+;; within your document (e.g. a link such as [[org-people:Steve Kemp]]
+;; you can use the helper `org-people-add-descriptions' to automatically
+;; add the contact description automatically - although if you used
+;; C-c C-l to insert such a link the description should be auto-populated.
 ;;
 
 ;;; org-table helpers
@@ -123,8 +125,9 @@
 ;; fetching the values of a given property for each marked contact,
 ;; or the person upon the current row if nothing is marked.
 ;;
-;; Currently the only user of the marking functionality are the two
-;; export routines we have (vCARD and CSV).
+;; The vCARD and CSV exporter functions use this facility, as does
+;; the "open website" and "compose email" functions which are bound
+;; by default within the summary-view.
 ;;
 
 ;;; complete-at-point
@@ -147,91 +150,6 @@
 ;;
 ;;
 
-
-;;; Version history (brief)
-
-;;
-;; 2.2  - Allow marking/unmarking people in the summary buffer.
-;;        Marked users can be exported en masse to vCARD or CSV.
-;;
-;; 2.1   - "F" allows filtering for contacts for whom a specific property exists.
-;;
-;; 2.0.1 - When org-people: links are exported to HTML a hyperlink will be added
-;;         for the person if there is a :WEBSITE property defined.
-;;
-;; 2.0  - Improvements to org-people: link handling.
-;;        Default link description is now the contact name.
-;;
-;; 1.9.1 - Removed some unused functions and made the code byte-compile clean
-;;         again.  Added new test-targets to the Makefile.
-;;         Fixed some comments and documentation.
-;;
-;; 1.9  - Any column included in `org-people-summary-properties' which is 100%
-;;        empty, and not present in any known contact, will be removed.
-;;        Updated to ignore :ID and :CREATED by default in completion and in the
-;;        table-generation from `org-people-person-to-table'.
-;;        The summary-properties may override the name, width and the attribute
-;;        extraction function to make things very dynamic.
-;;
-;; 1.8.1 - Improvement: Filtering on :TAGS property in `M-x org-people-summary`
-;;         uses sub-string matches of entries, rather than membership testing.
-;;
-;; 1.7 - BugFix: First column in `org-people-summary-properties' is used as the
-;;       default sort key.  Now allows a width to be defined too.
-;;
-;; 1.6 - Open the property drawers when jumping to a contact, to allow
-;;       viewing all appropriate details.
-;;
-;; 1.5 - All linting fixes implemented.
-;;
-;; 1.4 - `org-people-summary' now allows you to specify the fields
-;;       which are displayed, via the new `org-people-summary-properties'
-;;       configuration value.
-;;
-;; 1.3 - `org-people-summary' can now be filtered against all known properties.
-;;       Not just the ones which are visible.  (i.e. Filter against ":ADDRESS")
-;;
-;; 1.2 - Rudimentary (single-contact-only) VCF export.
-;;
-;; 1.1 - Special support for nickname, and case insensitivity by default for
-;;       completion.
-;;       org-people-ignored-properties was introduced to ignore specific
-;;       properties from completion and table-generation.
-;;
-;; 1.0 - Process all agenda-files by default, via a tag search for
-;;       ":contact:" (by default).  This is more generally useful, and
-;;       removes configuration and our ad-hoc caching implementation.
-;;
-;; 0.9 - `org-people-person-to-table' shows all the data about one individual
-;;       as an `org-mode' table.
-;;       Added test-cases in new file, org-people-test.el
-;;
-;; 0.8 - Provide "[[org-person:Name Here]]" support with completion,
-;;       clicking, and export attributes.
-;;       Make org-people-browse-name public and usefully available.
-;;
-;; 0.7 - Provide annotations for name-completion.
-;;       Switch the org-people-summary to using tabulated-list-mode.
-;;
-;; 0.6 - The table-creating function has been renamed and updated.
-;;       Now you can specify the fields to return.
-;;
-;; 0.5 - Drop simple functions.  They can be user-driver.
-;;       Added filtering options and rewrote code to use them.
-;;
-;; 0.4 - Allow searching by property value.
-;;       Added org-people-get-by-email, etc, using this new facility.
-;;
-;; 0.3 - :TAGS shows up as a comma-separated list in org-people-summary.
-;;       org-people-summary is set to view-mode, so "q" buries the buffer.
-;;
-;; 0.2 - Added org-people-summary.
-;;       Updated all contacts to have :TAGS and :NAME properties
-;;       where appropriate.
-;;
-;; 0.1 - initial release
-;;
-
 ;;; Code:
 
 (require 'cl-lib)
@@ -248,6 +166,8 @@
 
 ;;; Configuration:
 
+;;;; input selection
+
 (defvar org-people-search-tag "contact"
   "This is the tag-filter for finding contacts.")
 
@@ -259,36 +179,7 @@ be processed.  You might consider replacing this with a list of
 file-paths, in which case only those specific files will be read
 for contacts.")
 
-(defvar org-people-summary-buffer-name
-  "*Contacts*"
-  "The name of the buffer to create when `org-people-summary' is invoked.")
-
-(defvar org-people-vcard-buffer-name
-  "*VCARD*"
-  "This is the name of the buffer which is used for vCARD exports.
-
-In previous releases a buffer was created based upon the name of
-single contacts, however now it is possible to mark and export
-multiple people in a single operation so the name has to be
-person-agnostic, and we specify what to use here.")
-
-(defvar org-people-csv-buffer-name
-  "*CSV*"
-  "This is the name of the buffer which is used for CSV exports.
-
-CSV exports are written according to the properties listed in
-`org-people-csv-export-properties'.")
-
-(defvar org-people-csv-export-properties
-  '(:NAME :EMAIL :PHONE)
-  "A list of the properties to export to CVS.
-
-The export will contain a header if `org-people-csv-header' is set
-to a non-nil value.")
-
-(defvar org-people-csv-header
-  t
-  "Should a header be included in the CSV export?")
+;;;; column and ignored preferences
 
 (defvar org-people-summary-properties
   '((:NAME  :width 30)
@@ -304,18 +195,65 @@ defined, then it will be removed automatically.
 You may add faux-properties and define titles and getter-functions
 to allow constructing arbitrary columns.")
 
-;; internal usage only
-(defvar org-people-summary--columns)
-(defvar org-people-summary--active-columns)
-
 (defvar org-people-ignored-properties
   (list :CREATED :ID :MARKER)
-  "Properties which are generally ignored from contacts.
+  "Properties which are generally ignored within people definitions.
 
 These are properties which are specifically excluded when creating
 an `org-mode' table from a persons details with the
 `org-people-person-to-table' function, and also when completion
 is invoked by `org-people-insert'.")
+
+;;;; buffer names
+
+(defvar org-people-summary-buffer-name
+  "*Contacts*"
+  "The name of the buffer to create when `org-people-summary' is invoked.")
+
+(defvar org-people-vcard-buffer-name
+  "*VCARD*"
+  "This is the name of the buffer which is used for vCARD exports.
+
+In previous releases a buffer was created based upon the name of
+single contacts, however now it is possible to mark and export
+multiple people in a single operation so the name has to be
+person-agnostic, and we specify what to use here.")
+
+;;; CSV export config
+
+(defvar org-people-csv-buffer-name
+  "*CSV*"
+  "This is the name of the buffer which is used for CSV exports.
+
+CSV exports are written according to the properties listed in
+`org-people-csv-export-properties'.  The export will contain a
+header if `org-people-csv-header' is set to a non-nil value.")
+
+(defvar org-people-csv-export-properties
+  '(:NAME :EMAIL :PHONE)
+  "A list of the properties to export to CVS.
+
+The export will contain a header if `org-people-csv-header' is set
+to a non-nil value.")
+
+(defvar org-people-csv-header
+  t
+  "Should a header be included in the CSV export?")
+
+
+;;;; caching config
+
+(defvar org-people-use-cache t
+  "Non-nil means `org-people-parse' caches the result of `org-people--parser'.
+If nil, `org-people--parser' is called afresh every time.")
+
+(defvar org-people--cache nil
+  "Internal cache of `org-people--parser' results.")
+
+;;;; internal usage only
+
+(defvar org-people-summary--columns)
+(defvar org-people-summary--active-columns)
 
 (defvar org-people-summary-mode-map
   (let ((map (make-sparse-keymap)))
@@ -356,14 +294,39 @@ is invoked by `org-people-insert'.")
 ;;
 
 (defun org-people-parse ()
+  "Return all known people as a hash-table of NAME: PLIST from agenda files.
+
+If `org-people-use-cache' is non-nil return cached results when present,
+otherwise parse the agenda-files every time via `org-people--parser'.
+
+The cache may be invalidated explicitly via a call to `org-people-clear-cache'.
+
+All :MARKER properties pointing to dead buffers are removed automatically."
+  (let ((db (if org-people-use-cache
+                (or org-people--cache
+                    (setq org-people--cache (org-people--parser)))
+              ;; cache disabled, parse directly
+              (org-people--parser))))
+    ;; sanitize markers in either case
+    (maphash (lambda (_name plist)
+               (org-people--sanitize-markers plist))
+             db)
+    db))
+
+
+(defun org-people--parser ()
   "Return hash table of NAME -> PLIST from all agenda-files.
 
 We only include data from headlines which have a tag matching
 `org-people-search-tag', and at least one property.
 
-It is assumed the `org-mode' caching and parsing layer is fast
-enough that there won't be undue performance problems regardless
-of the number of contacts you have."
+The `org-mode' caching and parsing layer is good, but this
+function is intended to be wrapped by our own caching layer.
+
+This is an internal function which parses agenda-files every
+time it is invoked.  `org-people-parse' is the user-visible
+entry to our contacts - that adds on an (optional) caching
+layer which makes re-requesting details cheaper."
   (with-delayed-message (2 (format "Parsing contacts"))
     (let ((table (make-hash-table :test #'equal)))
       (org-map-entries
@@ -379,6 +342,7 @@ of the number of contacts you have."
                (setq plist (plist-put plist key val))))
            ;; Save the details if we have more than one property present.
            (when (and plist (> (/ (length plist) 2) 1))
+             ;; some generated properties.
              (setq plist (plist-put plist :NAME name))
              (setq plist (plist-put plist :MARKER (point-marker)))
              (setq plist (plist-put plist :TAGS entry-tags))
@@ -387,6 +351,28 @@ of the number of contacts you have."
        (concat "+" org-people-search-tag)
        org-people-search-type)
       table)))
+
+(defun org-people-clear-cache (&rest _)
+  "Clear the org-people cache."
+  (setq org-people--cache nil))
+
+(defun org-people--sanitize-markers (plist)
+  "Remove :MARKER property from PLIST if the buffer is dead."
+  (let ((m (plist-get plist :MARKER)))
+    (when (and m (not (marker-buffer m)))
+      (plist-put plist :MARKER nil)))
+  plist)
+
+(defun org-people-remove-markers-from-buffer (buffer)
+  "Remove :MARKER properties pointing to BUFFER from the org-people cache."
+  (when (and org-people--cache org-people-use-cache)
+    (maphash
+     (lambda (_name plist)
+       (when (and (plist-get plist :MARKER)
+                  (eq (marker-buffer (plist-get plist :MARKER)) buffer))
+         (plist-put plist :MARKER nil)))
+     org-people--cache)))
+
 
 ;;;###autoload
 (defun org-people-insert ()
@@ -1311,6 +1297,22 @@ contact, descriptions are only added if they are missing."
         ;; Replace with [[org-people:XXX][XXX]]
         (replace-match (format "[[org-people:%s][%s]]" target target) t t)))))
 
+
+;;
+;; Cache setup
+;;
+;; Add appropriate hooks for automatic cache invalidation, if relevant.
+;;
+
+(when org-people-use-cache
+  ;; Clear cache when Org structure changes.
+  (add-hook 'org-element-cache-reset-hook #'org-people-clear-cache)
+  ;; Clear cache when properties change.
+  (add-hook 'org-property-changed-functions #'org-people-clear-cache)
+  ;; Remove markers from buffers which are killed.
+  (add-hook 'kill-buffer-hook
+            (lambda ()
+              (org-people-remove-markers-from-buffer (current-buffer)))))
 
 (provide 'org-people)
 ;;; org-people.el ends here

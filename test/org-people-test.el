@@ -296,13 +296,6 @@
 ;; Link handling
 ;; ----------------------------------------------------------------------
 
-(ert-deftest org-people-browse-name-test ()
-  "Test jumping to marker."
-  (org-people--with-mocked-people
-   (let ((marker (plist-get (org-people-get-by-name "Alice Smith") :MARKER)))
-     (should (markerp marker))
-     (should (buffer-live-p (marker-buffer marker))))))
-
 (ert-deftest org-people-export-person-link-html-test ()
   "Test HTML export of org-people link."
   (org-people--with-mocked-people
