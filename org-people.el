@@ -842,6 +842,8 @@ Handles:
                            (org-people-column-width col)
                            t))
                    columns)))
+    ;; reset state of toggled properties
+    (setq org-people--expanded-entries (make-hash-table :test 'equal))
     ;; Sort key reset to avoid stale-column errors
     (setq tabulated-list-sort-key nil)
     ;; Build entries
