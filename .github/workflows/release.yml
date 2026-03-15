@@ -32,6 +32,8 @@ jobs:
           git add "$FILE"
           git commit -m "chore: update version to $NEW_VERSION"
           git push
+          # Capture the SHA of this commit
+          echo "VERSION_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       # 3️⃣ Create the real tag now on the updated commit
       - name: Create tag
@@ -39,6 +41,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_sha: ${{ env.VERSION_COMMIT_SHA }}
 
       # 4️⃣ Create GitHub release pointing to the correct tag
       - name: Create GitHub release
