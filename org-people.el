@@ -307,9 +307,11 @@ All :MARKER properties pointing to dead buffers are removed automatically."
                     (setq org-people--cache (org-people--parser)))
               ;; cache disabled, parse directly
               (org-people--parser))))
-    ;; sanitize markers in either case
+    ;; If we have markers point to buffers that don't exist then
+    ;; flush the cache.  This is overkill, but better to err on the
+    ;; side of caution.
     (maphash (lambda (_name plist)
-               (org-people--sanitize-markers plist))
+               (org-people--sanitize-cache plist))
              db)
     db))
 
@@ -356,21 +358,28 @@ layer which makes re-requesting details cheaper."
   "Clear the org-people cache."
   (setq org-people--cache nil))
 
-(defun org-people--sanitize-markers (plist)
-  "Remove :MARKER property from PLIST if the buffer is dead."
+(defun org-people--sanitize-cache (plist)
+  "Flush the `org-people-parse' buffer if the buffer is dead.
+
+If we have a marker which points to a buffer which no longer
+exists then invalidate the cache.
+
+Argument PLIST is the plist to examine for markers."
   (let ((m (plist-get plist :MARKER)))
     (when (and m (not (marker-buffer m)))
-      (plist-put plist :MARKER nil)))
-  plist)
+      (org-people-clear-cache))))
 
-(defun org-people-remove-markers-from-buffer (buffer)
-  "Remove :MARKER properties pointing to BUFFER from the org-people cache."
+(defun org-people-remove-dead-markers (buffer)
+  "If a :MARKER-target buffer is killed, then flush the cache.
+
+The BUFFER specifies the buffer whcih is being killed, and should
+be examined for :MARKER targets."
   (when (and org-people--cache org-people-use-cache)
     (maphash
      (lambda (_name plist)
        (when (and (plist-get plist :MARKER)
                   (eq (marker-buffer (plist-get plist :MARKER)) buffer))
-         (plist-put plist :MARKER nil)))
+         (org-people-clear-cache)))
      org-people--cache)))
 
 
@@ -1312,7 +1321,7 @@ contact, descriptions are only added if they are missing."
   ;; Remove markers from buffers which are killed.
   (add-hook 'kill-buffer-hook
             (lambda ()
-              (org-people-remove-markers-from-buffer (current-buffer)))))
+              (org-people-remove-dead-markers (current-buffer)))))
 
 (provide 'org-people)
 ;;; org-people.el ends here
