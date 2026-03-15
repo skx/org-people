@@ -227,6 +227,8 @@ In brief though:
 
 People may be marked with `m` (the current row), or `M` (all rows), and unmarked with `u` (current row), or `U` (all rows).  As of today only the exporting functions (vCARD and CSV) use the marked-rows, but you can add extensions and perhaps additional functionality will be added in the future.
 
+For simplicity you can toggle the display of known properties inline via `TAB`, which avoids the need to leave the view to see them.  (Otherwise `RET` and jumping to their definition would be the thing to do.)
+
 
 ### Coding Summary Additions
 

@@ -255,12 +255,19 @@ If nil, `org-people--parser' is called afresh every time.")
 (defvar org-people-summary--columns)
 (defvar org-people-summary--active-columns)
 
+(defvar org-people--expanded-entries (make-hash-table :test 'equal)
+  "Track which entries are expanded in this buffer.")
+
+(defvar org-people--max-property-name-width 0
+  "Maximum width of property names, precomputed for alignment.")
+
 (defvar org-people-summary-mode-map
   (let ((map (make-sparse-keymap)))
     ;; basic operations
     (define-key map (kbd "RET") #'org-people-summary--open)
     (define-key map (kbd "c") #'org-people-summary--copy-field)
     (define-key map (kbd "s") #'isearch-forward)
+    (define-key map (kbd "TAB") #'org-people-toggle-entry)
 
     ;; filtering
     (define-key map (kbd "f") #'org-people-summary--filter-by-property)
@@ -347,7 +354,8 @@ layer which makes re-requesting details cheaper."
              ;; some generated properties.
              (setq plist (plist-put plist :NAME name))
              (setq plist (plist-put plist :MARKER (point-marker)))
-             (setq plist (plist-put plist :TAGS entry-tags))
+             (if entry-tags
+                 (setq plist (plist-put plist :TAGS entry-tags)))
              (puthash name plist table))
            table))
        (concat "+" org-people-search-tag)
@@ -748,6 +756,50 @@ Example: (:NAME 30 :title \"Full Name\" :visible nil)"
      :getter getter
      :visible visible)))
 
+
+;;; Toggle details in summary
+
+(defun org-people-toggle-entry ()
+  "Toggle expansion of the contact at point in `org-people-summary-mode'.
+
+Expanded entries show all properties, one per line, with colons neatly aligned.
+Properties in `org-people-ignored-properties` are skipped."
+  (interactive)
+  (let* ((id (tabulated-list-get-id))
+         (start (line-end-position)))
+    (when id
+      (save-excursion
+        (let ((inhibit-read-only t))
+          (goto-char start)
+          (forward-line 1)
+          (if (gethash id org-people--expanded-entries)
+              ;; Collapse
+              (let ((beg (point)))
+                (while (looking-at "^    ")
+                  (forward-line 1))
+                (delete-region beg (point))
+                (remhash id org-people--expanded-entries))
+            ;; Expand
+            (let* ((person (org-people-get-by-name id))
+                   (props
+                    (cl-loop for (k v) on person by #'cddr
+                             unless (memq k org-people-ignored-properties)
+                             collect (cons k v))))
+              (when props
+                ;; Insert lines
+                (dolist (pair props)
+                  (let* ((name (substring (symbol-name (car pair)) 1))
+                         (val (cdr pair))
+                         (val-str (if (listp val)
+                                      (string-join val ", ")
+                                    (format "%s" val)))
+                         (name-padded
+                          (string-pad
+                           name
+                           org-people--max-property-name-width nil ? )))
+                    (insert (format "    %s : %s\n" name-padded val-str))))
+                (puthash id t org-people--expanded-entries)))))))))
+
 ;; ------------------------------------------------------------
 ;; Helper functions
 ;; ------------------------------------------------------------
@@ -804,7 +856,14 @@ Handles:
                                      columns)))))
                   plists))
     ;; Initialize header
-    (tabulated-list-init-header)))
+    (tabulated-list-init-header)
+
+    ;; Compute max-width once at load time if not done yet
+    (setq org-people--max-property-name-width
+          (apply #'max
+                 (mapcar (lambda (p)
+                           (length (substring (symbol-name p) 1)))
+                         (org-people--properties (org-people-parse)))))))
 
 (defun org-people-summary--toggle-column ()
   "Interactively toggle visibility of a column."
