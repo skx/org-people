@@ -4,7 +4,7 @@
 
 ;; Author: Steve Kemp <steve@steve.fi>
 ;; Maintainer: Steve Kemp <steve@steve.fi>
-;; Version: v2.6.1
+;; Version: v2.6.2
 ;; Package-Requires: ((emacs "29.1") (org "9.0"))
 ;; Keywords: outlines, contacts, people
 ;; URL: https://github.com/skx/org-people
