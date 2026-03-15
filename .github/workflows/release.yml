@@ -9,20 +9,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Compute the upcoming tag.
-        id: tag_version
+      # 1️⃣ Compute upcoming tag (dry-run)
+      - name: Compute upcoming tag
+        id: dry_tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: true
 
+      # 2️⃣ Update version in the package and commit
       - name: Update version in the package
         run: |
           FILE="org-people.el"
-          NEW_VERSION="${{ steps.tag_version.outputs.new_tag }}"
+          NEW_VERSION="${{ steps.dry_tag.outputs.new_tag }}"
           echo "Updating version to $NEW_VERSION in $FILE"
-          # Use sed to replace old version
           sed -i "s/^;; Version: .*/;; Version: $NEW_VERSION/" "$FILE"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -30,14 +33,17 @@ jobs:
           git commit -m "chore: update version to $NEW_VERSION"
           git push
 
-      - name: Bump version and push tag
+      # 3️⃣ Create the real tag now on the updated commit
+      - name: Create tag
+        id: real_tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create a GitHub release
+      # 4️⃣ Create GitHub release pointing to the correct tag
+      - name: Create GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
+          tag: ${{ steps.real_tag.outputs.new_tag }}
+          name: Release ${{ steps.real_tag.outputs.new_tag }}
+          body: ${{ steps.real_tag.outputs.changelog }}
