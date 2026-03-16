@@ -354,7 +354,7 @@ layer which makes re-requesting details cheaper."
              ;; some generated properties.
              (setq plist (plist-put plist :NAME name))
              (setq plist (plist-put plist :MARKER (point-marker)))
-             (if entry-tags
+             (if (not (null entry-tags))
                  (setq plist (plist-put plist :TAGS entry-tags)))
              (puthash name plist table))
            table))
@@ -783,10 +783,17 @@ Properties in `org-people-ignored-properties` are skipped."
             (let* ((person (org-people-get-by-name id))
                    (props
                     (cl-loop for (k v) on person by #'cddr
-                             unless (memq k org-people-ignored-properties)
+                             unless (or (null v) (memq k org-people-ignored-properties))
                              collect (cons k v))))
               (when props
-                ;; Insert lines
+                ;; sorting properties is neater
+                (setq props
+                      (sort props
+                            (lambda (a b)
+                              (string< (symbol-name (car a))
+                                       (symbol-name (car b))))))
+
+                ;; Insert the name:value pairs.
                 (dolist (pair props)
                   (let* ((name (substring (symbol-name (car pair)) 1))
                          (val (cdr pair))
@@ -1222,6 +1229,7 @@ of the entries is specified by `org-people-csv-export-properties'."
         (with-current-buffer org-people-summary-buffer-name
           (let ((inhibit-read-only t))
             (erase-buffer)
+            (setq org-people--expanded-entries (make-hash-table :test 'equal))
             (setq tabulated-list-entries
                   (mapcar #'org-people-summary--entry filtered))
             (tabulated-list-print t)))))))
@@ -1255,6 +1263,7 @@ This allows you to find all contacts with :EMAIL, for example."
       (with-current-buffer org-people-summary-buffer-name
         (let ((inhibit-read-only t))
           (erase-buffer)
+          (setq org-people--expanded-entries (make-hash-table :test 'equal))
           (setq tabulated-list-entries
                 (mapcar #'org-people-summary--entry filtered))
           (tabulated-list-print t))))))
