@@ -27,7 +27,7 @@ jobs:
           NEW_VERSION="${{ steps.dry_tag.outputs.new_tag }}"
           VERSION=$(echo "$NEW_VERSION" | tr -d 'v')
           echo "Updating version to $VERSION in $FILE"
-          sed -i "s/^;; Version: .*/;; Version: $NUMBER/" "$FILE"
+          sed -i "s/^;; Version: .*/;; Version: $VERSION/" "$FILE"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "$FILE"
