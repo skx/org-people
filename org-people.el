@@ -152,6 +152,16 @@
 ;;                      #'org-people-capf
 ;;                      nil t)))
 ;;
+
+;;; hl-line-mode
+
+;; If you want to enable `hl-line-mode` that is supported, and there are local
+;; configurations setup so that only people are highlighted - rather than any
+;; inline property blocks which might be present.
+;;
+;; Simply add this to your configuration:
+;;
+;;   (add-hook 'org-people-summary-mode-hook #'(lambda () (hl-line-mode 1)))
 ;;
 
 ;;; Code:
