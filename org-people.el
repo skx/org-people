@@ -970,7 +970,7 @@ toggled interactively.  It will not restore columns which are empty."
          (escaped (replace-regexp-in-string "\"" "\"\"" str)))
     (format "\"%s\"" escaped)))
 
-(defun org-people-export-to-csv (name)
+(defun org-people-export-to-csv (&optional name)
   "Export the given contact to a CSV format.
 
 This function will get, or create, the buffer named in the
@@ -979,6 +979,10 @@ This function will get, or create, the buffer named in the
 NAME should be the name of the contact to export, and the
 fields to be exported are specified by `org-people-csv-export-properties'."
   (interactive)
+  (if (not name)
+      (setq name (org-people-select-interactively)))
+  (unless name
+      (user-error "No contact selected!"))
   (let* ((plist (org-people-get-by-name name)))
     (with-current-buffer (get-buffer-create org-people-csv-buffer-name)
       (insert
@@ -987,9 +991,11 @@ fields to be exported are specified by `org-people-csv-export-properties'."
           (org-people--csv-escape (plist-get plist p)))
         org-people-csv-export-properties
         ", ")
-        "\n"))))
+       "\n")))
+  (if (called-interactively-p 'any)
+      (pop-to-buffer (get-buffer-create org-people-csv-buffer-name))))
 
-(defun org-people-export-to-vcard (name)
+(defun org-people-export-to-vcard (&optional name)
   "Export the given contact to a vCard 3.0 format.
 
 This function will get, or create, the buffer named in the
@@ -997,6 +1003,10 @@ This function will get, or create, the buffer named in the
 
 NAME should be the name of the contact to export."
   (interactive)
+  (if (not name)
+      (setq name (org-people-select-interactively)))
+  (unless name
+      (user-error "No contact selected!"))
   (let* ((plist   (org-people-get-by-name name))
          (name    (plist-get plist :NAME))
          (email   (plist-get plist :EMAIL))
@@ -1037,7 +1047,9 @@ NAME should be the name of the contact to export."
 
       ;; Enable vcard-mode if available
       (when (fboundp 'vcard-mode)
-        (vcard-mode)))))
+        (vcard-mode))))
+    (if (called-interactively-p 'any)
+      (pop-to-buffer (get-buffer-create org-people-vcard-buffer-name))))
 
 (defun org-people--open-properties ()
   "Open the property drawer beneath current headline."
@@ -1403,6 +1415,8 @@ as the `org-people-summary' mode."
   (interactive)
   (if (not name)
       (setq name (org-people-select-interactively)))
+  (unless name
+      (user-error "No contact selected!"))
   (let ((marker (plist-get (org-people-get-by-name name) :MARKER)))
     (switch-to-buffer (marker-buffer marker))
     (goto-char marker)
