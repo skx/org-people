@@ -37,6 +37,19 @@ It should probably be noted that the summary table, and the CSV/vCARD exportors,
 
 
 
+## Screenshots
+
+Here's the default view, a list of contacts showing `:NAME`, `:EMAIL`, `:PHONE` and `:TAGS`:
+
+![Contact list](_media/contacts.png)
+
+I've enabled `hl-line-mode` here, to highlight the current row, which is an optional enhancement.  Within the list you can mark [multiple] people and apply operations to them,
+for example opening the `:WEBSITE` of each person.  Filtering is possible, column sorting, etc.   When the point is over a contact you may press `TAB` to toggle the inline-display of their associated properties:
+
+![Contact list](_media/contact-with-properties.png)
+
+
+
 ## Installation / Configuration Example
 
 The legacy way to install would be to clone this repository and ensure the directory is available upon your load-path, or copy your local lisp tree.
