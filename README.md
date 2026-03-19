@@ -10,19 +10,19 @@ test-cases:
 ```
 * People
   ** Alice                           :family:contact:
-  :PROPERTIES
+  :PROPERTIES:
   :ADDRESS: 32 Something Street
   :EMAIL: alice@example.com
   :PHONE: +123 456 789
   :CHILDREN: Mallory
   :NICKNAME: Allu
-  :END
+  :END:
  ** Bob                           :colleague:contact:
-  :PROPERTIES
+  :PROPERTIES:
   :ADDRESS: 32 Something Lane
   :EMAIL: bob@example.com
   :PHONE: +123 456 987
-  :END
+  :END:
 ```
 
 It is assumed that you'll have "`ADDRESS`", "`EMAIL`", "`PHONE`", and other similar properties, however there are no mandatory properties - you add what you prefer.  Any contacts will be recognized providing they contain at least one property, along with the necessary "contact" tag to identify them.  (The headline itself is used as the contact name.)
