@@ -1,7 +1,7 @@
 * Intro
 This is a sample document which contains some contacts.
 
-These contacts are used by the =org-people-test.el= package, which uses the =ert= facility to run test-cases.
+These contacts are used by the =org-people-test.el= package, which uses the =ert= package to run test-cases.
 
 * People
 ** Alice Smith  :friend:work:contact:
