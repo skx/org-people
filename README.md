@@ -9,7 +9,7 @@ are discovered within each of your org-agenda files (i.e. We default to the file
 * With data about them stored in property drawers.
 
 This is an example of a pair of contacts, and you can see more within the
-[https://raw.githubusercontent.com/skx/org-people/refs/heads/main/test/org-people-test.org](test/org-people-test.org) file:
+[test/org-people-test.org](https://raw.githubusercontent.com/skx/org-people/refs/heads/main/test/org-people-test.org) file:
 
 ```
 * People
