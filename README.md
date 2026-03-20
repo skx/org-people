@@ -1,11 +1,15 @@
 # org-people
 
-This package allows easy contact-management via the native org-mode facilities.
+This package allows easy contact-management and inspection via native org-mode facilities.
 
-Contacts are found from any of your org-agenda files, providing they have a tag
-of "contacts", for example you can see the following simple hierarchy below, or
-look at `org-people-test.org` file within this repository which is used by the
-test-cases:
+People can be discovered from specific named files, and if none are specified then they
+are discovered within each of your org-agenda files (i.e. We default to the files listed in `org-agenda-files`).
+
+* People names are expected to be headlines.
+* With data about them stored in property drawers.
+
+This is an example of a pair of contacts, and you can see more within the
+[https://raw.githubusercontent.com/skx/org-people/refs/heads/main/test/org-people-test.org](test/org-people-test.org) file:
 
 ```
 * People
@@ -25,15 +29,17 @@ test-cases:
   :END:
 ```
 
-It is assumed that you'll have "`ADDRESS`", "`EMAIL`", "`PHONE`", and other similar properties, however there are no mandatory properties - you add what you prefer.  Any contacts will be recognized providing they contain at least one property, along with the necessary "contact" tag to identify them.  (The headline itself is used as the contact name.)
 
-As mentioned there are no specific properties we mandate, however there are a couple of possible properties
-which get special handling:
+### Default Properties
+
+It is assumed that you'll have "`ADDRESS`", "`EMAIL`", "`PHONE`", and other similar properties - but you can add as many properties as you wish and later retrieve/view them.   So long as there is a `contact` tag and at least one property then the entry will be recognized.
+
+The package doesn't mandate the use of any specific properties, however there are a couple of properties which get special handling:
 
 * If `:NICKNAME` is present it will be offered a completion-target.
 * If `:WEBSITE` is present it will be used when contact-links are exported to HTML.
 
-It should probably be noted that the summary table, and the CSV/vCARD exportors, will default to using the `ADDRESS`, `EMAIL`, and `PHONE` properties as their main input - but this is configurable.
+The summary view of all known contacts (`M-x org-people-summary`), and the CSV/vCARD exportors, will default to using the `ADDRESS`, `EMAIL`, and `PHONE` properties, however these can be changed.
 
 
 
@@ -43,8 +49,8 @@ Here's the default view, a list of contacts showing `:NAME`, `:EMAIL`, `:PHONE` 
 
 ![Contact list](_media/contacts.png)
 
-I've enabled `hl-line-mode` here, to highlight the current row, which is an optional enhancement.  Within the list you can mark [multiple] people and apply operations to them,
-for example opening the `:WEBSITE` of each person.  Filtering is possible, column sorting, etc.   When the point is over a contact you may press `TAB` to toggle the inline-display of their associated properties:
+I've enabled `hl-line-mode` here, to highlight the current row, which is an optional enhancement.  Within the list you can mark [multiple] people and apply operations to them, for example opening
+the `:WEBSITE` of each person.
 
 ![Contact list](_media/contact-with-properties.png)
 
@@ -52,9 +58,7 @@ for example opening the `:WEBSITE` of each person.  Filtering is possible, colum
 
 ## Installation / Configuration Example
 
-The legacy way to install would be to clone this repository and ensure the directory is available upon your load-path, or copy your local lisp tree.
-
-The package is now available upon MELPA, if you wish to install it from there.
+The legacy way to install would be to clone this repository and ensure the directory is available upon your load-path, or copy your local lisp tree.  The package is available upon MELPA, and can be installed from there in the standard way.
 
 Suggested usage if you're using the traditional approach:
 
@@ -75,16 +79,34 @@ If you prefer `use-package` then this works:
   :after org
   :bind
     (("C-c p" . org-people-insert)
-     ("C-c P" . org-people-summary)))
+     ("C-c P" . org-people-summary))
+  :hook
+    (org-people-summary-mode . hl-line-mode))
 ```
 
-If you want to enable `hl-line-mode` that is supported, and there are local configurations setup so that only people are highlighted - rather than any inline property blocks which might be present.
+That block enables `hl-line-mode` within the summary-buffer, which has special support to only
+highlight people-names rather than any inline property values.
 
-To enable this:
+To enable this the legacy-way you'd instead use:
 
 ```
 (add-hook 'org-people-summary-mode-hook #'(lambda () (hl-line-mode 1)))
 ```
+
+
+
+## Alternatives
+
+This package is pretty new, and there are several existing packages with overlapping functionality you might wish to compare against.
+
+* [org-contacts](https://github.com/emacsmirror/org-contacts)
+  * Stable for many years.  It has integration with IRC, rmail, etc
+  * Defines a custom link-type `org-contact:XXX` similar to the `org-people:XXX` this package supports.
+  * However org-contacts has nothing like our summary-view, and feels more like a fancy auto-completion framework.
+* [org-vcard](https://github.com/pinoaffe/org-vcard)
+  * Much more complete support for export, and has import too (org-people has no input facilities).
+  * Assumes people-data is stored in [sub]headlines, rather than properties.
+  * Limited additional functionality.
 
 
 
@@ -151,6 +173,7 @@ This package defines a custom `org-mode` link-type for the `org-people:` protoco
 A link might look like this for example:
 
     * This is a headline
+
     [[org-people:Steve Kemp]] wrote this package.
 
 When exported to HTML the contact name will be converted to a hyperlink pointing to the user's `:WEBSITE` property, if present, otherwise it will be left unchanged.
