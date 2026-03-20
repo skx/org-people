@@ -108,6 +108,8 @@ This package is pretty new, and there are several existing packages with overlap
   * Assumes people-data is stored in [sub]headlines, rather than properties.
   * Limited additional functionality.
 
+The main difference between this package and others I looked at is the interactive summary-view, which allows showing all known people in a flexible way, with sorting, filtering & etc.  This package also has the utility functions for generating/maintaining `org-mode` tables populated with contacts, or their details.
+
 
 
 ## Adding Entries
