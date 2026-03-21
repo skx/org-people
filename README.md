@@ -84,10 +84,7 @@ If you prefer `use-package` then this works:
     (org-people-summary-mode . hl-line-mode))
 ```
 
-That block enables `hl-line-mode` within the summary-buffer, which has special support to only
-highlight people-names rather than any inline property values.
-
-To enable this the legacy-way you'd instead use:
+That block enables `hl-line-mode` within the summary-buffer, which has special support to only highlight people-names rather than any inline property values.  To enable this manually you could use this:
 
 ```
 (add-hook 'org-people-summary-mode-hook #'(lambda () (hl-line-mode 1)))
@@ -271,7 +268,12 @@ In brief though:
 * `v` - Export the current contact, or all marked contacts, to vCARD format.
 * `C` - Export the current contact, or all marked contacts, to CSV.
 
-People may be marked with `m` (the current row), or `M` (all rows), and unmarked with `u` (current row), or `U` (all rows).  As of today only the exporting functions (vCARD and CSV) use the marked-rows, but you can add extensions and perhaps additional functionality will be added in the future.
+People may be marked with `m` (the current row), or `M` (all rows), and unmarked with `u` (current row), or `U` (all rows).  There are a couple of functions which operate upon all marked rows:
+
+* CSV Export (bound to `C` by default).
+* Email user(s) (bound to `e` by default).
+* Open website(s) of user(s) (bound to `w` by default).
+* vCARD Export (bound to `C` by default).
 
 For simplicity you can toggle the display of known properties inline via `TAB`, which avoids the need to leave the view to see them.  (Otherwise `RET` and jumping to their definition would be the thing to do.)
 
@@ -298,8 +300,18 @@ This is a brief example:
 
 
 
-## Testing
+## Testing The Code
 
 You can run `make test` via the supplied [Makefile](Makefile) to run the tests in a batch-mode, otherwise load the file [org-people-test.el](org-people-test.el) and run `M-x eval buffer`, you should see the test results in a new buffer.
 
 If any tests fail that's a bug.
+
+
+
+## Release Process
+
+The package uses semantic versioning, and labeling.
+
+Whenever a [pull request](https://github.com/skx/org-people/pulls) is merged a new release is automatically tagged, and our [org-people.el](org-people.el) file is automatically updated to include the new version number.
+
+This magic is handled via `release.yml` located within our [github actions directory](.github/workflows/).
