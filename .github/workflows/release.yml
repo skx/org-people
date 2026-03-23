@@ -8,7 +8,7 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4
         with:
           fetch-depth: 0
 
@@ -46,7 +46,7 @@ jobs:
 
       # 4️⃣ Create GitHub release pointing to the correct tag
       - name: Create GitHub release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd #v1
         with:
           tag: ${{ steps.real_tag.outputs.new_tag }}
           name: Release ${{ steps.real_tag.outputs.new_tag }}
