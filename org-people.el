@@ -218,6 +218,15 @@ an `org-mode' table from a persons details with the
 `org-people-person-to-table' function, and also when completion
 is invoked by `org-people-insert'.")
 
+(defvar org-people-ignored-tags
+  (list org-people-search-tag "noexport")
+  "A list of tags which are removed from contacts.
+
+We require all people to be tagged with something so that we can
+find them, as specified by `org-people-search-tag'.  This tag would
+be present on all known contacts so we configure it to be removed
+here, as well as removing \='noexport\=' by default too.")
+
 ;;;; buffer names
 
 (defvar org-people-summary-buffer-name
@@ -358,10 +367,14 @@ layer which makes re-requesting details cheaper."
     (let ((table (make-hash-table :test #'equal)))
       (org-map-entries
        (lambda ()
-         (let ((name (nth 4 (org-heading-components)))
+         (let* ((name (nth 4 (org-heading-components)))
                (plist nil)
-                                        ; remove "contacts" from the tag-list
-               (entry-tags (remove org-people-search-tag (org-get-tags))))
+               (entry-tags (org-get-tags))
+               ; remove "contacts" from the tag-list
+               (filtered-tags
+                (seq-remove (lambda (tag)
+                              (member tag org-people-ignored-tags))
+                            entry-tags)))
            ;; Get any associated properties
            (dolist (prop (org-entry-properties nil 'standard))
              (let ((key (intern (concat ":" (car prop))))
@@ -372,8 +385,8 @@ layer which makes re-requesting details cheaper."
              ;; some generated properties.
              (setq plist (plist-put plist :NAME name))
              (setq plist (plist-put plist :MARKER (point-marker)))
-             (if (not (null entry-tags))
-                 (setq plist (plist-put plist :TAGS entry-tags)))
+             (if (not (null filtered-tags))
+                 (setq plist (plist-put plist :TAGS filtered-tags)))
              (puthash name plist table))
            table))
        (concat "+" org-people-search-tag)
