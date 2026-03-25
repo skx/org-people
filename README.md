@@ -261,7 +261,8 @@ In brief though:
 * `f` Filter the view, by property.
   * Even properties which are not visible can be used.
   * e.g. ":ADDRESS" "Finland" will show only Finnish residents.
-* `R` reset the state of columns.
+* `r` reset the state of columns.
+* `R` clear the cache, reload all agenda files, and refresh the display.
 * `s` Initiate a search forward, via `isearch-forward`.
 * `t` Toggle visibility of a named column.
 * `T` Hide the current column.

@@ -302,7 +302,8 @@ If nil, `org-people--parser' is called afresh every time.")
     ;; column-handling.
     (define-key map (kbd "t") #'org-people-summary--toggle-column)
     (define-key map (kbd "T") #'org-people-summary--hide-this-column)
-    (define-key map (kbd "R") #'org-people-summary-show-all-columns)
+    (define-key map (kbd "r") #'org-people-summary-show-all-columns)
+    (define-key map (kbd "R") #'org-people-summary-force-refresh)
 
     ;; setting and clearing marks.
     (define-key map (kbd "m") #'org-people-summary--mark-row)
@@ -975,6 +976,16 @@ toggled interactively.  It will not restore columns which are empty."
     (setf (org-people-column-visible col) t))
   (org-people-summary--refresh)
   (tabulated-list-print t))
+
+(defun org-people-summary-force-refresh ()
+  "Force a reload of all agenda files, and flush the cache.
+
+This removes the cache, triggers an org-reload via `org-agenda-redo-all'
+and reloads the display."
+  (interactive)
+  (org-people-clear-cache)
+  (kill-buffer (get-buffer-create org-people-summary-buffer-name))
+  (org-people-summary))
 
 (defun org-people--csv-escape (value)
   "Escape VALUE for CSV output."
