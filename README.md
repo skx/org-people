@@ -77,6 +77,7 @@ If you prefer `use-package` then this works:
 ```
 (use-package org-people
   :after org
+  :demand t
   :bind
     (("C-c p" . org-people-insert)
      ("C-c P" . org-people-summary))
@@ -84,7 +85,7 @@ If you prefer `use-package` then this works:
     (org-people-summary-mode . hl-line-mode))
 ```
 
-That block enables `hl-line-mode` within the summary-buffer, which has special support to only highlight people-names rather than any inline property values.  To enable this manually you could use this:
+Importantly I set "`:demand t`" within this block, which ensures the package is loaded, and the custom link-type, and completion for that, is available immediately when I open my first `org-mode` file.  The block also enables `hl-line-mode` within the buffery produced by `org-people-summary`, which has special support to only highlight people-names rather than any inline property values.  To enable this manually you could use this:
 
 ```
 (add-hook 'org-people-summary-mode-hook #'(lambda () (hl-line-mode 1)))
